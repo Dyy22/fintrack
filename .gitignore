@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Frontend build
+fintrack-web/dist/
+fintrack-web/node_modules/
+fintrack-web/.env
+fintrack-web/.vite/
+fintrack-web/node_modules/.tmp/
+
+# Backend/local env
+fintrack-backend/.env
+
+# Go build artifacts
+*.test
+*.out
+bin/
+
+# OS/editor
+.DS_Store
+.vscode/
+.zed/
