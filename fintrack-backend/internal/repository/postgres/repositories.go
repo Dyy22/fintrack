@@ -437,7 +437,14 @@ func (r *Repositories) RefreshGoldAccountBalances(ctx context.Context, price dom
 func (r *Repositories) CreateBudget(ctx context.Context, userID uuid.UUID, categoryID uuid.UUID, month, year int, amount float64) (domain.Budget, error) {
 	var b domain.Budget
 	err := r.db.QueryRowContext(ctx, `INSERT INTO budgets (user_id,category_id,month,year,amount) VALUES ($1,$2,$3,$4,$5) RETURNING id,user_id,category_id,month,year,amount,created_at,updated_at`, userID, categoryID, month, year, amount).Scan(&b.ID, &b.UserID, &b.CategoryID, &b.Month, &b.Year, &b.Amount, &b.CreatedAt, &b.UpdatedAt)
-	return b, err
+	if err != nil {
+		return domain.Budget{}, err
+	}
+	cat, catErr := r.fetchCategory(ctx, categoryID)
+	if catErr == nil {
+		b.Category = &cat
+	}
+	return b, nil
 }
 
 func (r *Repositories) ListBudgets(ctx context.Context, userID uuid.UUID, month, year int) ([]domain.Budget, error) {
@@ -466,7 +473,14 @@ func (r *Repositories) UpdateBudget(ctx context.Context, userID, budgetID uuid.U
 	if errors.Is(err, sql.ErrNoRows) {
 		return domain.Budget{}, response.ErrNotFound
 	}
-	return b, err
+	if err != nil {
+		return domain.Budget{}, err
+	}
+	cat, catErr := r.fetchCategory(ctx, b.CategoryID)
+	if catErr == nil {
+		b.Category = &cat
+	}
+	return b, nil
 }
 
 func (r *Repositories) DeleteBudget(ctx context.Context, userID, budgetID uuid.UUID) error {
@@ -528,4 +542,13 @@ func (r *Repositories) SpendingByCategory(ctx context.Context, userID uuid.UUID,
 		return 0, nil, 0, err
 	}
 	return totalExpense, items, totalIncome, nil
+}
+
+func (r *Repositories) fetchCategory(ctx context.Context, categoryID uuid.UUID) (domain.Category, error) {
+	var c domain.Category
+	err := r.db.QueryRowContext(ctx, `SELECT id,user_id,name,type,is_default,created_at,updated_at FROM categories WHERE id=$1`, categoryID).Scan(&c.ID, &c.UserID, &c.Name, &c.Type, &c.IsDefault, &c.CreatedAt, &c.UpdatedAt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return domain.Category{}, response.ErrNotFound
+	}
+	return c, err
 }
