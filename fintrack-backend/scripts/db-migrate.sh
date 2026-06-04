@@ -5,27 +5,51 @@ COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.dev.yml}"
 DB_NAME="${DB_NAME:-fintrack}"
 DB_USER="${DB_USER:-fintrack}"
 MIGRATIONS_DIR="${MIGRATIONS_DIR:-migrations}"
-
-if ! command -v docker >/dev/null 2>&1; then
-  echo "Missing required command: docker" >&2
-  exit 1
-fi
+DATABASE_URL="${DATABASE_URL:-}"
 
 if [ ! -d "$MIGRATIONS_DIR" ]; then
   echo "Migrations directory not found: $MIGRATIONS_DIR" >&2
   exit 1
 fi
 
-echo "Waiting for PostgreSQL..."
-docker compose -f "$COMPOSE_FILE" exec -T postgres sh -c "until pg_isready -U $DB_USER -d $DB_NAME; do sleep 1; done"
+if [ -n "$DATABASE_URL" ]; then
+  echo "Using DATABASE_URL for migrations."
 
-docker compose -f "$COMPOSE_FILE" exec -T postgres psql -U "$DB_USER" -d "$DB_NAME" -v ON_ERROR_STOP=1 -c "CREATE TABLE IF NOT EXISTS schema_migrations (version TEXT PRIMARY KEY, applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW())" >/dev/null
+  if command -v psql >/dev/null 2>&1; then
+    psql_exec() {
+      psql "$DATABASE_URL" -v ON_ERROR_STOP=1 "$@"
+    }
+  else
+    if ! command -v docker >/dev/null 2>&1; then
+      echo "Missing required command: psql or docker" >&2
+      exit 1
+    fi
 
-existing_users_table="$(docker compose -f "$COMPOSE_FILE" exec -T postgres psql -U "$DB_USER" -d "$DB_NAME" -tAc "SELECT to_regclass('public.users')")"
-existing_initial_migration="$(docker compose -f "$COMPOSE_FILE" exec -T postgres psql -U "$DB_USER" -d "$DB_NAME" -tAc "SELECT version FROM schema_migrations WHERE version='000001_init'")"
+    psql_exec() {
+      docker run --rm -i postgres:16-alpine psql "$DATABASE_URL" -v ON_ERROR_STOP=1 "$@"
+    }
+  fi
+else
+  if ! command -v docker >/dev/null 2>&1; then
+    echo "Missing required command: docker" >&2
+    exit 1
+  fi
+
+  echo "Waiting for local PostgreSQL..."
+  docker compose -f "$COMPOSE_FILE" exec -T postgres sh -c "until pg_isready -U $DB_USER -d $DB_NAME; do sleep 1; done"
+
+  psql_exec() {
+    docker compose -f "$COMPOSE_FILE" exec -T postgres psql -U "$DB_USER" -d "$DB_NAME" -v ON_ERROR_STOP=1 "$@"
+  }
+fi
+
+psql_exec -c "CREATE TABLE IF NOT EXISTS schema_migrations (version TEXT PRIMARY KEY, applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW())" >/dev/null
+
+existing_users_table="$(psql_exec -tAc "SELECT to_regclass('public.users')")"
+existing_initial_migration="$(psql_exec -tAc "SELECT version FROM schema_migrations WHERE version='000001_init'")"
 if [ "$existing_users_table" = "users" ] && [ "$existing_initial_migration" != "000001_init" ]; then
   echo "Marking existing initial schema as applied: 000001_init"
-  docker compose -f "$COMPOSE_FILE" exec -T postgres psql -U "$DB_USER" -d "$DB_NAME" -v ON_ERROR_STOP=1 -c "INSERT INTO schema_migrations (version) VALUES ('000001_init') ON CONFLICT DO NOTHING" >/dev/null
+  psql_exec -c "INSERT INTO schema_migrations (version) VALUES ('000001_init') ON CONFLICT DO NOTHING" >/dev/null
 fi
 
 applied_any=0
@@ -36,15 +60,15 @@ for migration_file in "$MIGRATIONS_DIR"/*.up.sql; do
 
   migration_name="$(basename "$migration_file")"
   version="${migration_name%.up.sql}"
-  existing_version="$(docker compose -f "$COMPOSE_FILE" exec -T postgres psql -U "$DB_USER" -d "$DB_NAME" -tAc "SELECT version FROM schema_migrations WHERE version='$version'")"
+  existing_version="$(psql_exec -tAc "SELECT version FROM schema_migrations WHERE version='$version'")"
   if [ "$existing_version" = "$version" ]; then
     echo "Skipping already applied migration: $version"
     continue
   fi
 
   echo "Applying migration: $migration_file"
-  docker compose -f "$COMPOSE_FILE" exec -T postgres psql -U "$DB_USER" -d "$DB_NAME" -v ON_ERROR_STOP=1 < "$migration_file"
-  docker compose -f "$COMPOSE_FILE" exec -T postgres psql -U "$DB_USER" -d "$DB_NAME" -v ON_ERROR_STOP=1 -c "INSERT INTO schema_migrations (version) VALUES ('$version')" >/dev/null
+  psql_exec < "$migration_file"
+  psql_exec -c "INSERT INTO schema_migrations (version) VALUES ('$version')" >/dev/null
   applied_any=1
 done
 

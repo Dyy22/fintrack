@@ -1,6 +1,24 @@
 # Fintrack
 
+[![CI](https://github.com/Dyy22/fintract/actions/workflows/ci.yml/badge.svg)](https://github.com/Dyy22/fintract/actions/workflows/ci.yml)
+[![Deploy](https://github.com/Dyy22/fintract/actions/workflows/deploy.yml/badge.svg)](https://github.com/Dyy22/fintract/actions/workflows/deploy.yml)
+
 Fintrack is a personal finance tracker built as a monorepo with a Go backend and a React frontend.
+
+## Deployment status
+
+| Component | Platform | Status |
+| --- | --- | --- |
+| Frontend | Vercel | Production deployed |
+| Backend API | Render | Production deployed |
+| Database | Neon Postgres | Production configured and migrated |
+| CI/CD | GitHub Actions | `CI` then `Deploy` on `main` |
+
+Production flow:
+
+```txt
+push to main -> CI -> Render backend deploy hook; Vercel deploys frontend from Git integration
+```
 
 ## Project structure
 
@@ -8,8 +26,9 @@ Fintrack is a personal finance tracker built as a monorepo with a Go backend and
 fintrack/
 ├── fintrack-backend/   # Go + Gin API, PostgreSQL migrations, tests
 ├── fintrack-web/       # React + Vite + TypeScript frontend
+├── render.yaml         # Render backend service blueprint
 ├── docker-compose.yml  # Local full-stack compose setup
-└── .github/workflows/  # CI pipeline
+└── .github/workflows/  # CI and deployment workflows
 ```
 
 ## Stack
@@ -30,6 +49,13 @@ fintrack/
 - Tailwind CSS
 - Zustand
 - Axios
+
+### Production hosting
+
+- Vercel for the frontend
+- Render for the backend API
+- Neon Postgres for the database
+- GitHub Actions for CI/CD
 
 ## Features
 
@@ -65,7 +91,6 @@ Default services:
 
 ```bash
 cd fintrack-backend
-cp .env.example .env
 make dev
 ```
 
@@ -76,7 +101,7 @@ cd fintrack-backend
 go test ./...
 ```
 
-Apply database migrations:
+Apply local database migrations:
 
 ```bash
 cd fintrack-backend
@@ -87,7 +112,6 @@ make db-migrate
 
 ```bash
 cd fintrack-web
-cp .env.example .env
 npm install
 npm run dev
 ```
@@ -122,24 +146,70 @@ Workflow file:
 .github/workflows/ci.yml
 ```
 
-## Deployment notes
+## Deployment
 
-Recommended deployment split:
+Production deployment is configured through GitHub Actions:
 
 - Frontend: Vercel
-- Backend: Render, Railway, or Fly.io
-- Database: Supabase Postgres, Neon, Railway Postgres, or Render Postgres
+- Backend: Render
+- Database: Neon Postgres
 
-For Vercel frontend deployment:
-
-- Root Directory: `fintrack-web`
-- Build Command: `npm run build`
-- Output Directory: `dist`
-- Environment variable:
+Workflow file:
 
 ```txt
-VITE_API_BASE_URL=https://your-backend-domain.com/api/v1
+.github/workflows/deploy.yml
 ```
+
+The deploy workflow runs after the `CI` workflow succeeds on `main`. It can also be started manually from GitHub Actions.
+
+### Required GitHub repository secrets
+
+Set these in GitHub: `Settings` → `Secrets and variables` → `Actions`.
+
+#### Render
+
+```txt
+RENDER_DEPLOY_HOOK_URL=your_render_deploy_hook_url
+```
+
+The backend deploys from `fintrack-backend` using the existing backend `Dockerfile`. The Render service blueprint is stored in `render.yaml`.
+
+#### Vercel
+
+No GitHub Actions secret is required for the frontend when Vercel Git integration is enabled. Vercel deploys `fintrack-web` directly from the connected GitHub repository.
+
+### Required production environment variables
+
+#### Backend service on Render
+
+```txt
+APP_ENV=production
+DATABASE_URL=your_neon_pooled_connection_string
+JWT_SECRET=replace-with-a-strong-secret
+JWT_EXPIRES_IN=24h
+CORS_ALLOWED_ORIGINS=https://your-vercel-app.vercel.app
+```
+
+`DATABASE_URL` is supported directly for Neon/Postgres deployments. If `APP_ENV=production`, the backend requires `DATABASE_URL` to be configured.
+
+#### Frontend project on Vercel
+
+```txt
+VITE_API_BASE_URL=https://your-render-backend-domain.onrender.com/api/v1
+```
+
+After changing Vercel environment variables, redeploy the frontend so Vite can bake the value into the production build.
+
+### Database migrations
+
+Apply migrations from `fintrack-backend/migrations` to the production database before using the deployed app. The migration script supports `DATABASE_URL`, so you can run it against Neon from your local machine:
+
+```bash
+cd fintrack-backend
+DATABASE_URL="your_neon_pooled_connection_string" make db-migrate
+```
+
+If `psql` is not installed locally, the script falls back to running the PostgreSQL client through Docker.
 
 ## Package READMEs
 
@@ -147,3 +217,7 @@ See package-specific documentation:
 
 - [`fintrack-backend/README.md`](fintrack-backend/README.md)
 - [`fintrack-web/README.md`](fintrack-web/README.md)
+
+## License
+
+This project is open source under the [MIT License](LICENSE).

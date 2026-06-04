@@ -11,6 +11,7 @@ import (
 type Config struct {
 	AppEnv                   string
 	Port                     string
+	DatabaseURLValue         string
 	DBHost                   string
 	DBPort                   string
 	DBName                   string
@@ -38,6 +39,7 @@ func Load() Config {
 	return Config{
 		AppEnv:                   getEnv("APP_ENV", "development"),
 		Port:                     getEnv("PORT", "8080"),
+		DatabaseURLValue:         getEnv("DATABASE_URL", ""),
 		DBHost:                   getEnv("DB_HOST", "localhost"),
 		DBPort:                   getEnv("DB_PORT", "5432"),
 		DBName:                   getEnv("DB_NAME", "fintrack"),
@@ -53,7 +55,23 @@ func Load() Config {
 }
 
 func (c Config) DatabaseURL() string {
+	if c.HasDatabaseURL() {
+		return c.DatabaseURLValue
+	}
+
 	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", c.DBUser, c.DBPassword, c.DBHost, c.DBPort, c.DBName)
+}
+
+func (c Config) HasDatabaseURL() bool {
+	return strings.TrimSpace(c.DatabaseURLValue) != ""
+}
+
+func (c Config) Validate() error {
+	if c.IsProduction() && !c.HasDatabaseURL() {
+		return fmt.Errorf("DATABASE_URL is required when APP_ENV=production")
+	}
+
+	return nil
 }
 
 func (c Config) IsProduction() bool {
