@@ -90,3 +90,7 @@ CORS_ALLOWED_ORIGINS=https://your-vercel-app.vercel.app
 ```
 
 Then redeploy the Render backend.
+
+## License
+
+This package is part of Fintrack and is open source under the [MIT License](../LICENSE).

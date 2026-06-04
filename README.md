@@ -206,7 +206,7 @@ Apply migrations from `fintrack-backend/migrations` to the production database b
 
 ```bash
 cd fintrack-backend
-DATABASE_URL="postgresql://user:password@host/neondb?sslmode=require" make db-migrate
+DATABASE_URL="your_neon_pooled_connection_string" make db-migrate
 ```
 
 If `psql` is not installed locally, the script falls back to running the PostgreSQL client through Docker.
@@ -217,3 +217,7 @@ See package-specific documentation:
 
 - [`fintrack-backend/README.md`](fintrack-backend/README.md)
 - [`fintrack-web/README.md`](fintrack-web/README.md)
+
+## License
+
+This project is open source under the [MIT License](LICENSE).

@@ -57,7 +57,7 @@ Common environment variables:
 ```txt
 APP_ENV=development
 PORT=8080
-DATABASE_URL=postgresql://user:password@host/db?sslmode=require
+DATABASE_URL=your_postgres_connection_string
 DB_HOST=localhost
 DB_PORT=5432
 DB_NAME=fintrack
@@ -90,7 +90,7 @@ make db-migrate
 Apply production migrations against Neon:
 
 ```bash
-DATABASE_URL="postgresql://user:password@host/neondb?sslmode=require" make db-migrate
+DATABASE_URL="your_neon_pooled_connection_string" make db-migrate
 ```
 
 If `psql` is not installed locally, the migration script falls back to running the PostgreSQL client through Docker.
@@ -162,3 +162,7 @@ RENDER_DEPLOY_HOOK_URL
 - `GET /api/v1/gold/prices/history`
 - `GET /api/v1/reports/net-worth`
 - `GET /api/v1/reports/spending-by-category`
+
+## License
+
+This package is part of Fintrack and is open source under the [MIT License](../LICENSE).
