@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "../components/common/Button";
 import { Card } from "../components/common/Card";
 import { NeoAlert } from "../components/common/NeoAlert";
@@ -6,7 +6,7 @@ import { NeoEmptyState } from "../components/common/NeoEmptyState";
 import { NeoInput } from "../components/common/NeoInput";
 import { NeoPageHeader } from "../components/common/NeoPageHeader";
 import { NeoSelect } from "../components/common/NeoSelect";
-import { Skeleton, SkeletonCard } from "../components/common/Skeleton";
+import { SkeletonCard } from "../components/common/Skeleton";
 import { useBudgetStore } from "../stores/budgetStore";
 import { formatIDR } from "../utils/format";
 import { usePageTitle } from "../utils/usePageTitle";
@@ -156,12 +156,6 @@ export function BudgetsPage() {
     } catch {
       // error state handled silently
     }
-  }
-
-  function progressColor(percent: number) {
-    if (percent >= 100) return "bg-red-400";
-    if (percent >= 80) return "bg-yellow-300";
-    return "bg-emerald-400";
   }
 
   const years = useMemo(() => {
