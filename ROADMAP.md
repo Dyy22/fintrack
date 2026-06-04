@@ -1,6 +1,6 @@
 # Fintrack — Project Roadmap
 
-**Version**: 1.3  
+**Version**: 1.4  
 **Last Updated**: 4 June 2026
 
 ---
@@ -250,14 +250,14 @@ push to main -> CI -> Render backend deploy hook; Vercel deploys frontend from G
 | Cryptocurrency portfolio | ⬜ | |
 | Multi-currency support | ⬜ | |
 | Recurring transactions | ⬜ | |
-| Budget tracking per category | ⬜ | |
+| Budget tracking per category | ✅ | Budget CRUD + spending comparison with color-coded progress bars |
 | Bank API integration (open banking) | ⬜ | |
 | Import CSV/Excel | ⬜ | |
 | Export reports to PDF | ⬜ | |
 | Shared accounts (family mode) | ⬜ | |
 | React Native mobile app | ⬜ | |
 | OpenAPI/Swagger docs | ✅ | Full OpenAPI 3.1 spec at `docs/openapi.yaml` + Scalar API reference viewer at `/docs/api` |
-| Structured logging | ⬜ | |
+| Structured logging | ✅ | JSON log output using slog, Gin requests logged as structured JSON |
 | Audit log / account activity history | ⬜ | |
 | User profile and settings page | ⬜ | |
 
@@ -266,6 +266,6 @@ push to main -> CI -> Render backend deploy hook; Vercel deploys frontend from G
 ## Recommended Next Priorities
 
 1. Add secret scanning automation (GitHub secret scanning or gitleaks).
-2. Structured logging for better production debugging.
-3. Budget tracking per category.
+2. Audit log / account activity history.
+3. User profile and settings page.
 4. Recurring transactions.
