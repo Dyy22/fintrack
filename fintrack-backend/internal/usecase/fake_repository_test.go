@@ -10,28 +10,33 @@ import (
 )
 
 type fakeRepository struct {
-	createUserFn           func(ctx context.Context, email, passwordHash string) (domain.User, error)
-	findUserByEmailFn      func(ctx context.Context, email string) (domain.User, error)
-	listAccountTypesFn     func(ctx context.Context) ([]domain.AccountType, error)
-	listAccountsFn         func(ctx context.Context, userID uuid.UUID) ([]domain.Account, error)
-	findAccountFn          func(ctx context.Context, userID, accountID uuid.UUID) (domain.Account, error)
-	accountTypeNameFn      func(ctx context.Context, accountTypeID int) (string, error)
-	createAccountFn        func(ctx context.Context, userID uuid.UUID, name string, accountTypeID int, balance float64, goldGrams *float64, goldPrice *float64) (domain.Account, error)
-	updateAccountFn        func(ctx context.Context, userID, accountID uuid.UUID, name *string, isActive *bool) (domain.Account, error)
-	softDeleteAccountFn    func(ctx context.Context, userID, accountID uuid.UUID) error
-	hardDeleteAccountFn    func(ctx context.Context, userID, accountID uuid.UUID) error
-	listCategoriesFn       func(ctx context.Context, userID uuid.UUID, typ string) ([]domain.Category, error)
-	createCategoryFn       func(ctx context.Context, userID uuid.UUID, name, typ string) (domain.Category, error)
-	updateCategoryFn       func(ctx context.Context, userID, categoryID uuid.UUID, name string) (domain.Category, error)
-	deleteCategoryFn       func(ctx context.Context, userID, categoryID uuid.UUID) error
-	createTransactionFn    func(ctx context.Context, tx domain.Transaction) (domain.Transaction, error)
-	listTransactionsFn     func(ctx context.Context, userID uuid.UUID, start, end, accountID, categoryID, typ string, limit, offset int) ([]domain.Transaction, error)
-	netWorthFn             func(ctx context.Context, userID uuid.UUID) (float64, []domain.Account, error)
-	spendingByCategoryFn   func(ctx context.Context, userID uuid.UUID, start, end time.Time) (float64, []domain.SpendingCategory, float64, error)
-	latestGoldPriceFn      func(ctx context.Context) (domain.GoldPrice, error)
-	saveGoldPriceFn        func(ctx context.Context, price domain.GoldPrice) (domain.GoldPrice, error)
-	listGoldPriceHistoryFn func(ctx context.Context, days int) ([]domain.GoldPriceHistoryPoint, error)
-	refreshGoldFn          func(ctx context.Context, price domain.GoldPrice) error
+	createUserFn                func(ctx context.Context, email, passwordHash string) (domain.User, error)
+	findUserByEmailFn           func(ctx context.Context, email string) (domain.User, error)
+	listAccountTypesFn          func(ctx context.Context) ([]domain.AccountType, error)
+	listAccountsFn              func(ctx context.Context, userID uuid.UUID) ([]domain.Account, error)
+	findAccountFn               func(ctx context.Context, userID, accountID uuid.UUID) (domain.Account, error)
+	accountTypeNameFn           func(ctx context.Context, accountTypeID int) (string, error)
+	createAccountFn             func(ctx context.Context, userID uuid.UUID, name string, accountTypeID int, balance float64, goldGrams *float64, goldPrice *float64) (domain.Account, error)
+	updateAccountFn             func(ctx context.Context, userID, accountID uuid.UUID, name *string, isActive *bool) (domain.Account, error)
+	softDeleteAccountFn         func(ctx context.Context, userID, accountID uuid.UUID) error
+	hardDeleteAccountFn         func(ctx context.Context, userID, accountID uuid.UUID) error
+	listCategoriesFn            func(ctx context.Context, userID uuid.UUID, typ string) ([]domain.Category, error)
+	createCategoryFn            func(ctx context.Context, userID uuid.UUID, name, typ string) (domain.Category, error)
+	updateCategoryFn            func(ctx context.Context, userID, categoryID uuid.UUID, name string) (domain.Category, error)
+	deleteCategoryFn            func(ctx context.Context, userID, categoryID uuid.UUID) error
+	createTransactionFn         func(ctx context.Context, tx domain.Transaction) (domain.Transaction, error)
+	listTransactionsFn          func(ctx context.Context, userID uuid.UUID, start, end, accountID, categoryID, typ string, limit, offset int) ([]domain.Transaction, error)
+	netWorthFn                  func(ctx context.Context, userID uuid.UUID) (float64, []domain.Account, error)
+	spendingByCategoryFn        func(ctx context.Context, userID uuid.UUID, start, end time.Time) (float64, []domain.SpendingCategory, float64, error)
+	latestGoldPriceFn           func(ctx context.Context) (domain.GoldPrice, error)
+	saveGoldPriceFn             func(ctx context.Context, price domain.GoldPrice) (domain.GoldPrice, error)
+	listGoldPriceHistoryFn      func(ctx context.Context, days int) ([]domain.GoldPriceHistoryPoint, error)
+	refreshGoldFn               func(ctx context.Context, price domain.GoldPrice) error
+	createBudgetFn              func(ctx context.Context, userID uuid.UUID, categoryID uuid.UUID, month, year int, amount float64) (domain.Budget, error)
+	listBudgetsFn               func(ctx context.Context, userID uuid.UUID, month, year int) ([]domain.Budget, error)
+	updateBudgetFn              func(ctx context.Context, userID, budgetID uuid.UUID, amount float64) (domain.Budget, error)
+	deleteBudgetFn              func(ctx context.Context, userID, budgetID uuid.UUID) error
+	spendingByCategoryInRangeFn func(ctx context.Context, userID uuid.UUID, start, end time.Time) ([]domain.SpendingCategory, error)
 }
 
 func (f fakeRepository) CreateUser(ctx context.Context, email, passwordHash string) (domain.User, error) {
@@ -117,4 +122,34 @@ func (f fakeRepository) RefreshGoldAccountBalances(ctx context.Context, price do
 		return f.refreshGoldFn(ctx, price)
 	}
 	return nil
+}
+func (f fakeRepository) CreateBudget(ctx context.Context, userID uuid.UUID, categoryID uuid.UUID, month, year int, amount float64) (domain.Budget, error) {
+	if f.createBudgetFn != nil {
+		return f.createBudgetFn(ctx, userID, categoryID, month, year, amount)
+	}
+	return domain.Budget{}, nil
+}
+func (f fakeRepository) ListBudgets(ctx context.Context, userID uuid.UUID, month, year int) ([]domain.Budget, error) {
+	if f.listBudgetsFn != nil {
+		return f.listBudgetsFn(ctx, userID, month, year)
+	}
+	return nil, nil
+}
+func (f fakeRepository) UpdateBudget(ctx context.Context, userID, budgetID uuid.UUID, amount float64) (domain.Budget, error) {
+	if f.updateBudgetFn != nil {
+		return f.updateBudgetFn(ctx, userID, budgetID, amount)
+	}
+	return domain.Budget{}, nil
+}
+func (f fakeRepository) DeleteBudget(ctx context.Context, userID, budgetID uuid.UUID) error {
+	if f.deleteBudgetFn != nil {
+		return f.deleteBudgetFn(ctx, userID, budgetID)
+	}
+	return nil
+}
+func (f fakeRepository) SpendingByCategoryInRange(ctx context.Context, userID uuid.UUID, start, end time.Time) ([]domain.SpendingCategory, error) {
+	if f.spendingByCategoryInRangeFn != nil {
+		return f.spendingByCategoryInRangeFn(ctx, userID, start, end)
+	}
+	return nil, nil
 }

@@ -43,3 +43,14 @@ type createTransactionRequest struct {
 	Date              *time.Time `json:"date"`
 	TransferAccountID *string    `json:"transfer_account_id"`
 }
+
+type createBudgetRequest struct {
+	CategoryID string  `json:"category_id" binding:"required"`
+	Month      int     `json:"month" binding:"required,min=1,max=12"`
+	Year       int     `json:"year" binding:"required,min=2020"`
+	Amount     float64 `json:"amount" binding:"required,gt=0"`
+}
+
+type updateBudgetRequest struct {
+	Amount float64 `json:"amount" binding:"required,gt=0"`
+}

@@ -10,6 +10,7 @@ import { NewAccountPage } from "./pages/NewAccountPage";
 import { NewTransactionPage } from "./pages/NewTransactionPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { ReportsPage } from "./pages/ReportsPage";
+import { BudgetsPage } from "./pages/BudgetsPage";
 import { TransactionsPage } from "./pages/TransactionsPage";
 
 const ApiDocsPage = lazy(() =>
@@ -49,6 +50,7 @@ export default function App() {
             <Route path="/accounts/new" element={<NewAccountPage />} />
             <Route path="/transactions" element={<TransactionsPage />} />
             <Route path="/transactions/new" element={<NewTransactionPage />} />
+            <Route path="/budgets" element={<BudgetsPage />} />
             <Route path="/reports" element={<ReportsPage />} />
           </Route>
         </Route>

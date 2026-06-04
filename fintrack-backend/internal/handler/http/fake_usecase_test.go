@@ -29,6 +29,10 @@ type fakeUsecase struct {
 	spendingByCategoryFn func(ctx context.Context, userID uuid.UUID, startDate, endDate string) (time.Time, time.Time, float64, []domain.SpendingCategory, float64, error)
 	latestGoldPriceFn    func(ctx context.Context) (domain.GoldPrice, error)
 	goldPriceHistoryFn   func(ctx context.Context, days int) ([]domain.GoldPriceHistoryPoint, error)
+	createBudgetFn       func(ctx context.Context, userID uuid.UUID, categoryID uuid.UUID, month, year int, amount float64) (domain.BudgetWithSpending, error)
+	listBudgetsFn        func(ctx context.Context, userID uuid.UUID, month, year int) ([]domain.BudgetWithSpending, error)
+	updateBudgetFn       func(ctx context.Context, userID, budgetID uuid.UUID, amount float64) (domain.BudgetWithSpending, error)
+	deleteBudgetFn       func(ctx context.Context, userID, budgetID uuid.UUID) error
 }
 
 func (f fakeUsecase) Register(ctx context.Context, email, password string) (domain.User, error) {
@@ -90,4 +94,28 @@ func (f fakeUsecase) GoldPriceHistory(ctx context.Context, days int) ([]domain.G
 		return f.goldPriceHistoryFn(ctx, days)
 	}
 	return nil, nil
+}
+func (f fakeUsecase) CreateBudget(ctx context.Context, userID uuid.UUID, categoryID uuid.UUID, month, year int, amount float64) (domain.BudgetWithSpending, error) {
+	if f.createBudgetFn != nil {
+		return f.createBudgetFn(ctx, userID, categoryID, month, year, amount)
+	}
+	return domain.BudgetWithSpending{}, nil
+}
+func (f fakeUsecase) ListBudgets(ctx context.Context, userID uuid.UUID, month, year int) ([]domain.BudgetWithSpending, error) {
+	if f.listBudgetsFn != nil {
+		return f.listBudgetsFn(ctx, userID, month, year)
+	}
+	return nil, nil
+}
+func (f fakeUsecase) UpdateBudget(ctx context.Context, userID, budgetID uuid.UUID, amount float64) (domain.BudgetWithSpending, error) {
+	if f.updateBudgetFn != nil {
+		return f.updateBudgetFn(ctx, userID, budgetID, amount)
+	}
+	return domain.BudgetWithSpending{}, nil
+}
+func (f fakeUsecase) DeleteBudget(ctx context.Context, userID, budgetID uuid.UUID) error {
+	if f.deleteBudgetFn != nil {
+		return f.deleteBudgetFn(ctx, userID, budgetID)
+	}
+	return nil
 }
