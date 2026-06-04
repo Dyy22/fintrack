@@ -67,13 +67,7 @@ VITE_API_BASE_URL=https://your-render-backend-domain.onrender.com/api/v1
 
 The app includes `vercel.json` rewrites so React Router routes can be refreshed directly in production.
 
-GitHub Actions deploys the frontend through Vercel CLI using these repository secrets:
-
-```txt
-VERCEL_TOKEN
-VERCEL_ORG_ID
-VERCEL_PROJECT_ID
-```
+Vercel deploys the frontend through its Git integration when changes are pushed to the connected repository. The GitHub Actions `CI` workflow still validates frontend lint/build before the repository-level deploy workflow triggers backend deployment.
 
 ## Backend integration
 

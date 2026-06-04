@@ -17,7 +17,7 @@ Fintrack is a personal finance tracker built as a monorepo with a Go backend and
 Production flow:
 
 ```txt
-push to main -> CI -> Render backend deploy hook -> Vercel frontend deploy
+push to main -> CI -> Render backend deploy hook; Vercel deploys frontend from Git integration
 ```
 
 ## Project structure
@@ -176,13 +176,7 @@ The backend deploys from `fintrack-backend` using the existing backend `Dockerfi
 
 #### Vercel
 
-```txt
-VERCEL_TOKEN=your_vercel_token
-VERCEL_ORG_ID=your_vercel_team_or_user_id
-VERCEL_PROJECT_ID=your_vercel_project_id
-```
-
-The frontend deploys from `fintrack-web` using Vercel CLI.
+No GitHub Actions secret is required for the frontend when Vercel Git integration is enabled. Vercel deploys `fintrack-web` directly from the connected GitHub repository.
 
 ### Required production environment variables
 
