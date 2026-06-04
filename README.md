@@ -186,7 +186,14 @@ VITE_API_BASE_URL=https://your-render-backend-domain.onrender.com/api/v1
 
 ### Database migrations
 
-Apply migrations from `fintrack-backend/migrations` to the production database before using the deployed app. You can run them manually with the backend migration tooling against the Neon production database.
+Apply migrations from `fintrack-backend/migrations` to the production database before using the deployed app. The migration script supports `DATABASE_URL`, so you can run it against Neon from your local machine:
+
+```bash
+cd fintrack-backend
+DATABASE_URL="postgresql://user:password@host/neondb?sslmode=require" make db-migrate
+```
+
+If `psql` is not installed locally, the script falls back to running the PostgreSQL client through Docker.
 
 ## Package READMEs
 
