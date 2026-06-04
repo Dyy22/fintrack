@@ -1,6 +1,6 @@
 # Fintrack — Project Roadmap
 
-**Version**: 1.2  
+**Version**: 1.3  
 **Last Updated**: 4 June 2026
 
 ---
@@ -236,9 +236,9 @@ push to main -> CI -> Render backend deploy hook; Vercel deploys frontend from G
 | Secret hygiene check | ✅ | Current tree checked for obvious committed secrets; production secrets rotated by user |
 | MIT License | ✅ | Project is now open source licensed |
 | Deployment docs | ✅ | Root/backend/frontend READMEs updated |
-| Branch protection | ⬜ | Require PR + passing CI before merge to `main` |
-| Manual migration workflow | ⬜ | GitHub Action to run production migrations with a protected secret |
-| DB-aware health check | ⬜ | Extend health check to verify database connectivity |
+| Branch protection | ✅ | Require PR + passing CI before merge to `main` |
+| Manual migration workflow | ✅ | GitHub Action to run production migrations with a protected secret |
+| DB-aware health check | ✅ | Health check verifies database connectivity, returns `degraded` status on failure |
 | Secret scanning automation | ⬜ | Add GitHub secret scanning/gitleaks workflow |
 
 ---
@@ -256,7 +256,7 @@ push to main -> CI -> Render backend deploy hook; Vercel deploys frontend from G
 | Export reports to PDF | ⬜ | |
 | Shared accounts (family mode) | ⬜ | |
 | React Native mobile app | ⬜ | |
-| OpenAPI/Swagger docs | ⬜ | |
+| OpenAPI/Swagger docs | ✅ | Full OpenAPI 3.1 spec at `docs/openapi.yaml` + Scalar API reference viewer at `/docs/api` |
 | Structured logging | ⬜ | |
 | Audit log / account activity history | ⬜ | |
 | User profile and settings page | ⬜ | |
@@ -265,8 +265,7 @@ push to main -> CI -> Render backend deploy hook; Vercel deploys frontend from G
 
 ## Recommended Next Priorities
 
-1. Add branch protection for `main`.
-2. Add a manual production migration GitHub Action.
-3. Upgrade `/api/v1/health` to include a database connectivity check.
-4. Add OpenAPI/Swagger documentation.
-5. Continue with recurring transactions or budget tracking.
+1. Add secret scanning automation (GitHub secret scanning or gitleaks).
+2. Structured logging for better production debugging.
+3. Budget tracking per category.
+4. Recurring transactions.
