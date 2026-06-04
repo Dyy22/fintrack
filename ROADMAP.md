@@ -250,14 +250,11 @@ push to main -> CI -> Render backend deploy hook; Vercel deploys frontend from G
 | Cryptocurrency portfolio | ⬜ | |
 | Multi-currency support | ⬜ | |
 | Recurring transactions | ⬜ | |
-| Budget tracking per category | ✅ | Budget CRUD + spending comparison with color-coded progress bars |
 | Bank API integration (open banking) | ⬜ | |
 | Import CSV/Excel | ⬜ | |
 | Export reports to PDF | ⬜ | |
 | Shared accounts (family mode) | ⬜ | |
 | React Native mobile app | ⬜ | |
-| OpenAPI/Swagger docs | ✅ | Full OpenAPI 3.1 spec at `docs/openapi.yaml` + Scalar API reference viewer at `/docs/api` |
-| Structured logging | ✅ | JSON log output using slog, Gin requests logged as structured JSON |
 | Audit log / account activity history | ⬜ | |
 | User profile and settings page | ⬜ | |
 
