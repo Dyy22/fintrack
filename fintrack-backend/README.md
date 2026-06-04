@@ -164,6 +164,10 @@ RENDER_DEPLOY_HOOK_URL
 PRODUCTION_DATABASE_URL
 ```
 
+## API documentation
+
+The backend API is documented with OpenAPI in [`../docs/openapi.yaml`](../docs/openapi.yaml). You can open it with Swagger Editor, Redoc, Scalar, or any OpenAPI-compatible tooling.
+
 ## Main endpoints
 
 - `GET /api/v1/health`
