@@ -62,6 +62,11 @@ func Router(cfg config.Config, h *Handler, jwtService security.JWTService, healt
 	protected.GET("/reports/net-worth", h.NetWorth)
 	protected.GET("/reports/spending-by-category", h.SpendingByCategory)
 
+	protected.GET("/budgets", h.ListBudgets)
+	protected.POST("/budgets", h.CreateBudget)
+	protected.PUT("/budgets/:id", h.UpdateBudget)
+	protected.DELETE("/budgets/:id", h.DeleteBudget)
+
 	return r
 }
 

@@ -81,3 +81,17 @@ export type ApiErrorResponse = {
   error: string;
   message: string;
 };
+
+export type Budget = {
+  id: string;
+  category_id: string;
+  category: { id: string; name: string; type: string; is_default: boolean };
+  month: number;
+  year: number;
+  amount: number;
+  spent: number;
+  remaining: number;
+  percent: number;
+  created_at: string;
+  updated_at: string;
+};
