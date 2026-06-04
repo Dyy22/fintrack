@@ -1,6 +1,24 @@
 # Fintrack
 
+[![CI](https://github.com/Dyy22/fintract/actions/workflows/ci.yml/badge.svg)](https://github.com/Dyy22/fintract/actions/workflows/ci.yml)
+[![Deploy](https://github.com/Dyy22/fintract/actions/workflows/deploy.yml/badge.svg)](https://github.com/Dyy22/fintract/actions/workflows/deploy.yml)
+
 Fintrack is a personal finance tracker built as a monorepo with a Go backend and a React frontend.
+
+## Deployment status
+
+| Component | Platform | Status |
+| --- | --- | --- |
+| Frontend | Vercel | Production deployed |
+| Backend API | Render | Production deployed |
+| Database | Neon Postgres | Production configured and migrated |
+| CI/CD | GitHub Actions | `CI` then `Deploy` on `main` |
+
+Production flow:
+
+```txt
+push to main -> CI -> Render backend deploy hook -> Vercel frontend deploy
+```
 
 ## Project structure
 
@@ -8,8 +26,9 @@ Fintrack is a personal finance tracker built as a monorepo with a Go backend and
 fintrack/
 ├── fintrack-backend/   # Go + Gin API, PostgreSQL migrations, tests
 ├── fintrack-web/       # React + Vite + TypeScript frontend
+├── render.yaml         # Render backend service blueprint
 ├── docker-compose.yml  # Local full-stack compose setup
-└── .github/workflows/  # CI pipeline
+└── .github/workflows/  # CI and deployment workflows
 ```
 
 ## Stack
@@ -30,6 +49,13 @@ fintrack/
 - Tailwind CSS
 - Zustand
 - Axios
+
+### Production hosting
+
+- Vercel for the frontend
+- Render for the backend API
+- Neon Postgres for the database
+- GitHub Actions for CI/CD
 
 ## Features
 
@@ -65,7 +91,6 @@ Default services:
 
 ```bash
 cd fintrack-backend
-cp .env.example .env
 make dev
 ```
 
@@ -76,7 +101,7 @@ cd fintrack-backend
 go test ./...
 ```
 
-Apply database migrations:
+Apply local database migrations:
 
 ```bash
 cd fintrack-backend
@@ -87,7 +112,6 @@ make db-migrate
 
 ```bash
 cd fintrack-web
-cp .env.example .env
 npm install
 npm run dev
 ```
@@ -128,7 +152,7 @@ Production deployment is configured through GitHub Actions:
 
 - Frontend: Vercel
 - Backend: Render
-- Database: Neon Postgres or any hosted PostgreSQL provider
+- Database: Neon Postgres
 
 Workflow file:
 
@@ -136,7 +160,7 @@ Workflow file:
 .github/workflows/deploy.yml
 ```
 
-It runs after the `CI` workflow succeeds on `main` and can also be started manually from GitHub Actions.
+The deploy workflow runs after the `CI` workflow succeeds on `main`. It can also be started manually from GitHub Actions.
 
 ### Required GitHub repository secrets
 
@@ -148,7 +172,7 @@ Set these in GitHub: `Settings` → `Secrets and variables` → `Actions`.
 RENDER_DEPLOY_HOOK_URL=your_render_deploy_hook_url
 ```
 
-The backend service is configured for Render in `render.yaml` and deploys from `fintrack-backend` using the existing backend `Dockerfile`.
+The backend deploys from `fintrack-backend` using the existing backend `Dockerfile`. The Render service blueprint is stored in `render.yaml`.
 
 #### Vercel
 
@@ -164,8 +188,6 @@ The frontend deploys from `fintrack-web` using Vercel CLI.
 
 #### Backend service on Render
 
-Set these in the Render backend service environment variables:
-
 ```txt
 APP_ENV=production
 DATABASE_URL=your_neon_pooled_connection_string
@@ -174,15 +196,15 @@ JWT_EXPIRES_IN=24h
 CORS_ALLOWED_ORIGINS=https://your-vercel-app.vercel.app
 ```
 
-`DATABASE_URL` is supported directly for Neon/Postgres deployments. If you do not use `DATABASE_URL`, the backend falls back to `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, and `DB_PASSWORD`.
+`DATABASE_URL` is supported directly for Neon/Postgres deployments. If `APP_ENV=production`, the backend requires `DATABASE_URL` to be configured.
 
 #### Frontend project on Vercel
-
-Set this in the Vercel project environment variables:
 
 ```txt
 VITE_API_BASE_URL=https://your-render-backend-domain.onrender.com/api/v1
 ```
+
+After changing Vercel environment variables, redeploy the frontend so Vite can bake the value into the production build.
 
 ### Database migrations
 
