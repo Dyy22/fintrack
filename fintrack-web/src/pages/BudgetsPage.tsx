@@ -78,7 +78,7 @@ export function BudgetsPage() {
     return categories
       .filter((c) => c.type === "expense")
       .filter((c) => !usedCategoryIDs.has(c.id) || modalMode === "edit")
-      .map((c) => ({ value: c.id, label: `${c.name} (${c.type})` }));
+      .map((c) => ({ value: c.id, label: c.name }));
   }, [categories, budgets, modalMode]);
 
   function openCreateModal() {
