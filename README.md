@@ -148,6 +148,10 @@ Workflow file:
 .github/workflows/ci.yml
 ```
 
+## API documentation
+
+The backend API is documented with OpenAPI in [`docs/openapi.yaml`](docs/openapi.yaml). You can open it with Swagger Editor, Redoc, Scalar, or any OpenAPI-compatible tooling.
+
 ## Deployment
 
 Production deployment is configured through GitHub Actions:
