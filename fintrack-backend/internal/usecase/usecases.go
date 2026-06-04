@@ -36,6 +36,11 @@ type Repository interface {
 	SaveGoldPrice(ctx context.Context, price domain.GoldPrice) (domain.GoldPrice, error)
 	ListGoldPriceHistory(ctx context.Context, days int) ([]domain.GoldPriceHistoryPoint, error)
 	RefreshGoldAccountBalances(ctx context.Context, price domain.GoldPrice) error
+	CreateBudget(ctx context.Context, userID uuid.UUID, categoryID uuid.UUID, month, year int, amount float64) (domain.Budget, error)
+	ListBudgets(ctx context.Context, userID uuid.UUID, month, year int) ([]domain.Budget, error)
+	UpdateBudget(ctx context.Context, userID, budgetID uuid.UUID, amount float64) (domain.Budget, error)
+	DeleteBudget(ctx context.Context, userID, budgetID uuid.UUID) error
+	SpendingByCategoryInRange(ctx context.Context, userID uuid.UUID, start, end time.Time) ([]domain.SpendingCategory, error)
 }
 
 type GoldPriceProvider interface {
@@ -347,4 +352,70 @@ func reportRange(startDate, endDate string) (time.Time, time.Time, error) {
 		return time.Time{}, time.Time{}, response.ErrBadRequest
 	}
 	return start, endInclusive.AddDate(0, 0, 1), nil
+}
+
+func (u *Usecases) CreateBudget(ctx context.Context, userID uuid.UUID, categoryID uuid.UUID, month, year int, amount float64) (domain.BudgetWithSpending, error) {
+	if month < 1 || month > 12 || year < 2000 || amount <= 0 {
+		return domain.BudgetWithSpending{}, response.ErrBadRequest
+	}
+	budget, err := u.repo.CreateBudget(ctx, userID, categoryID, month, year, amount)
+	if err != nil {
+		if strings.Contains(err.Error(), "unique") || strings.Contains(err.Error(), "duplicate") {
+			return domain.BudgetWithSpending{}, response.ErrConflict
+		}
+		return domain.BudgetWithSpending{}, err
+	}
+	return u.enrichBudgetWithSpending(ctx, budget, month, year), nil
+}
+
+func (u *Usecases) ListBudgets(ctx context.Context, userID uuid.UUID, month, year int) ([]domain.BudgetWithSpending, error) {
+	if month < 1 || month > 12 || year < 2000 {
+		return nil, response.ErrBadRequest
+	}
+	budgets, err := u.repo.ListBudgets(ctx, userID, month, year)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]domain.BudgetWithSpending, len(budgets))
+	for i, b := range budgets {
+		result[i] = u.enrichBudgetWithSpending(ctx, b, month, year)
+	}
+	return result, nil
+}
+
+func (u *Usecases) UpdateBudget(ctx context.Context, userID, budgetID uuid.UUID, amount float64) (domain.BudgetWithSpending, error) {
+	if amount <= 0 {
+		return domain.BudgetWithSpending{}, response.ErrBadRequest
+	}
+	budget, err := u.repo.UpdateBudget(ctx, userID, budgetID, amount)
+	if err != nil {
+		return domain.BudgetWithSpending{}, err
+	}
+	return u.enrichBudgetWithSpending(ctx, budget, budget.Month, budget.Year), nil
+}
+
+func (u *Usecases) DeleteBudget(ctx context.Context, userID, budgetID uuid.UUID) error {
+	return u.repo.DeleteBudget(ctx, userID, budgetID)
+}
+
+func (u *Usecases) enrichBudgetWithSpending(ctx context.Context, budget domain.Budget, month, year int) domain.BudgetWithSpending {
+	start := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
+	end := start.AddDate(0, 1, 0)
+	spending, err := u.repo.SpendingByCategoryInRange(ctx, budget.UserID, start, end)
+	if err != nil {
+		return domain.BudgetWithSpending{Budget: budget, Spent: 0, Remaining: budget.Amount, Percent: 0}
+	}
+	var spent float64
+	for _, s := range spending {
+		if s.CategoryID == budget.CategoryID {
+			spent = s.Amount
+			break
+		}
+	}
+	remaining := budget.Amount - spent
+	percent := 0.0
+	if budget.Amount > 0 {
+		percent = math.Round((spent/budget.Amount)*10000) / 100
+	}
+	return domain.BudgetWithSpending{Budget: budget, Spent: spent, Remaining: remaining, Percent: percent}
 }

@@ -63,9 +63,10 @@ type Transaction struct {
 }
 
 type SpendingCategory struct {
-	Name       string  `json:"name"`
-	Amount     float64 `json:"amount"`
-	Percentage float64 `json:"percentage"`
+	CategoryID uuid.UUID `json:"category_id"`
+	Name       string    `json:"name"`
+	Amount     float64   `json:"amount"`
+	Percentage float64   `json:"percentage"`
 }
 
 type GoldPrice struct {
@@ -79,4 +80,23 @@ type GoldPriceHistoryPoint struct {
 	Date         string  `json:"date"`
 	PricePerGram float64 `json:"price_per_gram"`
 	Source       string  `json:"source"`
+}
+
+type Budget struct {
+	ID         uuid.UUID `json:"id"`
+	UserID     uuid.UUID `json:"-"`
+	CategoryID uuid.UUID `json:"category_id"`
+	Category   *Category `json:"category,omitempty"`
+	Month      int       `json:"month"`
+	Year       int       `json:"year"`
+	Amount     float64   `json:"amount"`
+	CreatedAt  time.Time `json:"created_at,omitempty"`
+	UpdatedAt  time.Time `json:"updated_at,omitempty"`
+}
+
+type BudgetWithSpending struct {
+	Budget
+	Spent     float64 `json:"spent"`
+	Remaining float64 `json:"remaining"`
+	Percent   float64 `json:"percent"`
 }

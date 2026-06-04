@@ -34,6 +34,10 @@ type Usecase interface {
 	SpendingByCategory(ctx context.Context, userID uuid.UUID, startDate, endDate string) (time.Time, time.Time, float64, []domain.SpendingCategory, float64, error)
 	LatestGoldPrice(ctx context.Context) (domain.GoldPrice, error)
 	GoldPriceHistory(ctx context.Context, days int) ([]domain.GoldPriceHistoryPoint, error)
+	CreateBudget(ctx context.Context, userID uuid.UUID, categoryID uuid.UUID, month, year int, amount float64) (domain.BudgetWithSpending, error)
+	ListBudgets(ctx context.Context, userID uuid.UUID, month, year int) ([]domain.BudgetWithSpending, error)
+	UpdateBudget(ctx context.Context, userID, budgetID uuid.UUID, amount float64) (domain.BudgetWithSpending, error)
+	DeleteBudget(ctx context.Context, userID, budgetID uuid.UUID) error
 }
 
 type Handler struct{ uc Usecase }
@@ -333,6 +337,96 @@ func (h *Handler) GoldPriceHistory(c *gin.Context) {
 		return
 	}
 	c.JSON(stdhttp.StatusOK, gin.H{"history": history})
+}
+
+func (h *Handler) ListBudgets(c *gin.Context) {
+	userID, ok := middleware.UserID(c)
+	if !ok {
+		response.Error(c, response.ErrUnauthorized)
+		return
+	}
+	month, err := strconv.Atoi(c.Query("month"))
+	if err != nil {
+		response.Error(c, response.ErrBadRequest)
+		return
+	}
+	year, err := strconv.Atoi(c.Query("year"))
+	if err != nil {
+		response.Error(c, response.ErrBadRequest)
+		return
+	}
+	budgets, err := h.uc.ListBudgets(c.Request.Context(), userID, month, year)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+	c.JSON(stdhttp.StatusOK, gin.H{"budgets": budgets})
+}
+
+func (h *Handler) CreateBudget(c *gin.Context) {
+	userID, ok := middleware.UserID(c)
+	if !ok {
+		response.Error(c, response.ErrUnauthorized)
+		return
+	}
+	var req createBudgetRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.ValidationError(c, err)
+		return
+	}
+	categoryID, err := uuid.Parse(req.CategoryID)
+	if err != nil {
+		response.Error(c, response.ErrBadRequest)
+		return
+	}
+	budget, err := h.uc.CreateBudget(c.Request.Context(), userID, categoryID, req.Month, req.Year, req.Amount)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+	c.JSON(stdhttp.StatusCreated, budget)
+}
+
+func (h *Handler) UpdateBudget(c *gin.Context) {
+	userID, ok := middleware.UserID(c)
+	if !ok {
+		response.Error(c, response.ErrUnauthorized)
+		return
+	}
+	budgetID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		response.Error(c, response.ErrBadRequest)
+		return
+	}
+	var req updateBudgetRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.ValidationError(c, err)
+		return
+	}
+	budget, err := h.uc.UpdateBudget(c.Request.Context(), userID, budgetID, req.Amount)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+	c.JSON(stdhttp.StatusOK, budget)
+}
+
+func (h *Handler) DeleteBudget(c *gin.Context) {
+	userID, ok := middleware.UserID(c)
+	if !ok {
+		response.Error(c, response.ErrUnauthorized)
+		return
+	}
+	budgetID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		response.Error(c, response.ErrBadRequest)
+		return
+	}
+	if err := h.uc.DeleteBudget(c.Request.Context(), userID, budgetID); err != nil {
+		response.Error(c, err)
+		return
+	}
+	c.Status(stdhttp.StatusNoContent)
 }
 
 func (h *Handler) SpendingByCategory(c *gin.Context) {
