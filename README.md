@@ -150,7 +150,7 @@ Workflow file:
 
 ## API documentation
 
-The backend API is documented with OpenAPI in [`docs/openapi.yaml`](docs/openapi.yaml). You can open it with Swagger Editor, Redoc, Scalar, or any OpenAPI-compatible tooling.
+The backend API is documented with OpenAPI in [`docs/openapi.yaml`](docs/openapi.yaml). The frontend also exposes a Scalar API reference at `/docs/api` using the bundled [`fintrack-web/public/openapi.yaml`](fintrack-web/public/openapi.yaml).
 
 ## Deployment
 

@@ -1,0 +1,843 @@
+openapi: 3.1.0
+info:
+  title: Fintrack API
+  version: 1.0.0
+  description: |
+    REST API for Fintrack, a personal finance tracker with accounts, categories,
+    transactions, gold price data, and financial reports.
+servers:
+  - url: https://your-render-backend-domain.onrender.com/api/v1
+    description: Production
+  - url: http://localhost:8080/api/v1
+    description: Local development
+tags:
+  - name: Health
+  - name: Auth
+  - name: Account Types
+  - name: Accounts
+  - name: Categories
+  - name: Transactions
+  - name: Gold
+  - name: Reports
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Check API and database health
+      operationId: getHealth
+      security: []
+      responses:
+        "200":
+          description: API and database are healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+              examples:
+                ok:
+                  value:
+                    status: ok
+                    database: ok
+        "503":
+          description: API is running but database connectivity failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+              examples:
+                degraded:
+                  value:
+                    status: degraded
+                    database: error
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a user
+      operationId: registerUser
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: User registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Log in and receive a bearer token
+      operationId: loginUser
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /account-types:
+    get:
+      tags: [Account Types]
+      summary: List available account types
+      operationId: listAccountTypes
+      responses:
+        "200":
+          description: Account types
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [account_types]
+                properties:
+                  account_types:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AccountType"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /accounts:
+    get:
+      tags: [Accounts]
+      summary: List accounts for the authenticated user
+      operationId: listAccounts
+      responses:
+        "200":
+          description: Accounts
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [accounts]
+                properties:
+                  accounts:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Account"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [Accounts]
+      summary: Create an account
+      operationId: createAccount
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAccountRequest"
+      responses:
+        "201":
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /accounts/{id}:
+    put:
+      tags: [Accounts]
+      summary: Update an account
+      operationId: updateAccount
+      parameters:
+        - $ref: "#/components/parameters/UUIDPathID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAccountRequest"
+      responses:
+        "200":
+          description: Account updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [Accounts]
+      summary: Delete an account
+      description: Soft deletes by default. Set `hard=true` to permanently delete.
+      operationId: deleteAccount
+      parameters:
+        - $ref: "#/components/parameters/UUIDPathID"
+        - name: hard
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "204":
+          description: Account deleted
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /categories:
+    get:
+      tags: [Categories]
+      summary: List categories
+      operationId: listCategories
+      parameters:
+        - name: type
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/CategoryType"
+      responses:
+        "200":
+          description: Categories
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [categories]
+                properties:
+                  categories:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Category"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [Categories]
+      summary: Create a category
+      operationId: createCategory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCategoryRequest"
+      responses:
+        "201":
+          description: Category created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /categories/{id}:
+    put:
+      tags: [Categories]
+      summary: Update a category
+      operationId: updateCategory
+      parameters:
+        - $ref: "#/components/parameters/UUIDPathID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCategoryRequest"
+      responses:
+        "200":
+          description: Category updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [Categories]
+      summary: Delete a category
+      operationId: deleteCategory
+      parameters:
+        - $ref: "#/components/parameters/UUIDPathID"
+      responses:
+        "204":
+          description: Category deleted
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /transactions:
+    get:
+      tags: [Transactions]
+      summary: List transactions
+      operationId: listTransactions
+      parameters:
+        - name: start_date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: account_id
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: category_id
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: type
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/TransactionType"
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+            minimum: 0
+            maximum: 100
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+      responses:
+        "200":
+          description: Transactions
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [transactions, limit, offset]
+                properties:
+                  transactions:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Transaction"
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [Transactions]
+      summary: Create a transaction
+      operationId: createTransaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTransactionRequest"
+      responses:
+        "201":
+          description: Transaction created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transaction"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/InsufficientBalance"
+  /gold/price:
+    get:
+      tags: [Gold]
+      summary: Get latest gold price
+      operationId: getGoldPrice
+      responses:
+        "200":
+          description: Latest gold price
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GoldPrice"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /gold/prices/history:
+    get:
+      tags: [Gold]
+      summary: Get gold price history
+      operationId: getGoldPriceHistory
+      parameters:
+        - name: days
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 7
+            minimum: 1
+      responses:
+        "200":
+          description: Gold price history
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [history]
+                properties:
+                  history:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/GoldPriceHistoryPoint"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /reports/net-worth:
+    get:
+      tags: [Reports]
+      summary: Get net worth report
+      operationId: getNetWorthReport
+      responses:
+        "200":
+          description: Net worth report
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [net_worth, accounts]
+                properties:
+                  net_worth:
+                    type: number
+                    format: double
+                  accounts:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Account"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /reports/spending-by-category:
+    get:
+      tags: [Reports]
+      summary: Get spending grouped by category
+      operationId: getSpendingByCategoryReport
+      parameters:
+        - name: start_date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Spending by category report
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [start_date, end_date, total_spending, total_income, categories]
+                properties:
+                  start_date:
+                    type: string
+                    format: date
+                  end_date:
+                    type: string
+                    format: date
+                  total_spending:
+                    type: number
+                    format: double
+                  total_income:
+                    type: number
+                    format: double
+                  categories:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/SpendingCategory"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    UUIDPathID:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    ValidationError:
+      description: Validation failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ValidationErrorResponse"
+    Unauthorized:
+      description: Missing or invalid bearer token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Conflict:
+      description: Resource conflict
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    InsufficientBalance:
+      description: Insufficient balance
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+  schemas:
+    HealthResponse:
+      type: object
+      required: [status, database]
+      properties:
+        status:
+          type: string
+          enum: [ok, degraded]
+        database:
+          type: string
+          enum: [ok, error, unknown]
+    RegisterRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+          format: password
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+    LoginResponse:
+      type: object
+      required: [token, user]
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+    User:
+      type: object
+      required: [id, email, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    AccountType:
+      type: object
+      required: [id, name, description]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+    Account:
+      type: object
+      required: [id, type, name, balance, currency, is_active]
+      properties:
+        id:
+          type: string
+          format: uuid
+        account_type_id:
+          type: integer
+        type:
+          type: string
+        name:
+          type: string
+        balance:
+          type: number
+          format: double
+        currency:
+          type: string
+          example: IDR
+        gold_grams:
+          type: number
+          format: double
+        gold_price_per_gram:
+          type: number
+          format: double
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    CreateAccountRequest:
+      type: object
+      required: [name, account_type_id]
+      properties:
+        name:
+          type: string
+        account_type_id:
+          type: integer
+        balance:
+          type: number
+          format: double
+          default: 0
+        gold_grams:
+          type: number
+          format: double
+    UpdateAccountRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        is_active:
+          type: boolean
+    CategoryType:
+      type: string
+      enum: [income, expense]
+    Category:
+      type: object
+      required: [id, name, type, is_default]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        type:
+          $ref: "#/components/schemas/CategoryType"
+        is_default:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    CreateCategoryRequest:
+      type: object
+      required: [name, type]
+      properties:
+        name:
+          type: string
+        type:
+          $ref: "#/components/schemas/CategoryType"
+    UpdateCategoryRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+    TransactionType:
+      type: string
+      enum: [income, expense, transfer]
+    Transaction:
+      type: object
+      required: [id, type, amount, date]
+      properties:
+        id:
+          type: string
+          format: uuid
+        account_id:
+          type: string
+          format: uuid
+        category_id:
+          type: string
+          format: uuid
+        type:
+          $ref: "#/components/schemas/TransactionType"
+        amount:
+          type: number
+          format: double
+        gold_grams:
+          type: number
+          format: double
+        description:
+          type: string
+        date:
+          type: string
+          format: date-time
+        transfer_account_id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        account:
+          $ref: "#/components/schemas/Account"
+        category:
+          $ref: "#/components/schemas/Category"
+    CreateTransactionRequest:
+      type: object
+      required: [account_id, type, amount]
+      properties:
+        account_id:
+          type: string
+          format: uuid
+        category_id:
+          type: string
+          format: uuid
+        type:
+          $ref: "#/components/schemas/TransactionType"
+        amount:
+          type: number
+          format: double
+          exclusiveMinimum: 0
+        gold_grams:
+          type: number
+          format: double
+        description:
+          type: string
+        date:
+          type: string
+          format: date-time
+        transfer_account_id:
+          type: string
+          format: uuid
+    SpendingCategory:
+      type: object
+      required: [name, amount, percentage]
+      properties:
+        name:
+          type: string
+        amount:
+          type: number
+          format: double
+        percentage:
+          type: number
+          format: double
+    GoldPrice:
+      type: object
+      required: [price_per_gram, source, fetched_at]
+      properties:
+        price_per_gram:
+          type: number
+          format: double
+        source:
+          type: string
+        fetched_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    GoldPriceHistoryPoint:
+      type: object
+      required: [date, price_per_gram, source]
+      properties:
+        date:
+          type: string
+          format: date
+        price_per_gram:
+          type: number
+          format: double
+        source:
+          type: string
+    ErrorResponse:
+      type: object
+      required: [error, message]
+      properties:
+        error:
+          type: string
+          examples: [bad_request, unauthorized, not_found, conflict, internal_server_error]
+        message:
+          type: string
+    ValidationErrorResponse:
+      type: object
+      required: [error, message]
+      properties:
+        error:
+          type: string
+          const: validation_error
+        message:
+          type: string
+          example: invalid request body
+        fields:
+          type: object
+          additionalProperties:
+            type: string
+security:
+  - bearerAuth: []
