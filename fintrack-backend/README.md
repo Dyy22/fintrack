@@ -155,6 +155,8 @@ Render health check path:
 /api/v1/health
 ```
 
+The health endpoint also verifies database connectivity. It returns `200 OK` with `database: "ok"` when PostgreSQL is reachable, and `503 Service Unavailable` with `status: "degraded"` when the database ping fails.
+
 GitHub Actions triggers Render deployment and manual production migrations through repository secrets:
 
 ```txt

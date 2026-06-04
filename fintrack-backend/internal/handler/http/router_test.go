@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	stdhttp "net/http"
 	"net/http/httptest"
 	"strings"
@@ -19,9 +20,21 @@ import (
 	"github.com/google/uuid"
 )
 
+type healthPingerStub struct {
+	err error
+}
+
+func (p healthPingerStub) PingContext(_ context.Context) error {
+	return p.err
+}
+
 func testRouter(uc Usecase, jwtService security.JWTService) *gin.Engine {
+	return testRouterWithHealthPinger(uc, jwtService, healthPingerStub{})
+}
+
+func testRouterWithHealthPinger(uc Usecase, jwtService security.JWTService, healthPinger HealthPinger) *gin.Engine {
 	gin.SetMode(gin.TestMode)
-	return Router(config.Config{AppEnv: "test", CORSAllowedOrigins: []string{"http://localhost:3000"}}, New(uc), jwtService)
+	return Router(config.Config{AppEnv: "test", CORSAllowedOrigins: []string{"http://localhost:3000"}}, New(uc), jwtService, healthPinger)
 }
 
 func authHeader(t *testing.T, jwtService security.JWTService, userID uuid.UUID) string {
@@ -81,6 +94,19 @@ func TestRouterHealth(t *testing.T) {
 		t.Fatalf("expected status 200, got %d body=%s", w.Code, w.Body.String())
 	}
 	assertJSONContains(t, w.Body.String(), "status", "ok")
+	assertJSONContains(t, w.Body.String(), "database", "ok")
+}
+
+func TestRouterHealthDatabaseError(t *testing.T) {
+	r := testRouterWithHealthPinger(fakeUsecase{}, security.NewJWTService("secret", time.Hour), healthPingerStub{err: errors.New("database unavailable")})
+
+	w := performRequest(r, stdhttp.MethodGet, "/api/v1/health", "", "")
+
+	if w.Code != stdhttp.StatusServiceUnavailable {
+		t.Fatalf("expected status 503, got %d body=%s", w.Code, w.Body.String())
+	}
+	assertJSONContains(t, w.Body.String(), "status", "degraded")
+	assertJSONContains(t, w.Body.String(), "database", "error")
 }
 
 func TestRegisterSuccess(t *testing.T) {
