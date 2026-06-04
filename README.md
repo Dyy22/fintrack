@@ -148,6 +148,10 @@ Workflow file:
 .github/workflows/ci.yml
 ```
 
+## API documentation
+
+The backend API is documented with OpenAPI in [`docs/openapi.yaml`](docs/openapi.yaml). The frontend also exposes a Scalar API reference at `/docs/api` using the bundled [`fintrack-web/public/openapi.yaml`](fintrack-web/public/openapi.yaml).
+
 ## Deployment
 
 Production deployment is configured through GitHub Actions:
