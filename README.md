@@ -122,24 +122,71 @@ Workflow file:
 .github/workflows/ci.yml
 ```
 
-## Deployment notes
+## Deployment
 
-Recommended deployment split:
+Production deployment is configured through GitHub Actions:
 
 - Frontend: Vercel
-- Backend: Render, Railway, or Fly.io
-- Database: Supabase Postgres, Neon, Railway Postgres, or Render Postgres
+- Backend: Render
+- Database: Neon Postgres or any hosted PostgreSQL provider
 
-For Vercel frontend deployment:
-
-- Root Directory: `fintrack-web`
-- Build Command: `npm run build`
-- Output Directory: `dist`
-- Environment variable:
+Workflow file:
 
 ```txt
-VITE_API_BASE_URL=https://your-backend-domain.com/api/v1
+.github/workflows/deploy.yml
 ```
+
+It runs after the `CI` workflow succeeds on `main` and can also be started manually from GitHub Actions.
+
+### Required GitHub repository secrets
+
+Set these in GitHub: `Settings` → `Secrets and variables` → `Actions`.
+
+#### Render
+
+```txt
+RENDER_DEPLOY_HOOK_URL=your_render_deploy_hook_url
+```
+
+The backend service is configured for Render in `render.yaml` and deploys from `fintrack-backend` using the existing backend `Dockerfile`.
+
+#### Vercel
+
+```txt
+VERCEL_TOKEN=your_vercel_token
+VERCEL_ORG_ID=your_vercel_team_or_user_id
+VERCEL_PROJECT_ID=your_vercel_project_id
+```
+
+The frontend deploys from `fintrack-web` using Vercel CLI.
+
+### Required production environment variables
+
+#### Backend service on Render
+
+Set these in the Render backend service environment variables:
+
+```txt
+APP_ENV=production
+DATABASE_URL=your_neon_pooled_connection_string
+JWT_SECRET=replace-with-a-strong-secret
+JWT_EXPIRES_IN=24h
+CORS_ALLOWED_ORIGINS=https://your-vercel-app.vercel.app
+```
+
+`DATABASE_URL` is supported directly for Neon/Postgres deployments. If you do not use `DATABASE_URL`, the backend falls back to `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, and `DB_PASSWORD`.
+
+#### Frontend project on Vercel
+
+Set this in the Vercel project environment variables:
+
+```txt
+VITE_API_BASE_URL=https://your-render-backend-domain.onrender.com/api/v1
+```
+
+### Database migrations
+
+Apply migrations from `fintrack-backend/migrations` to the production database before using the deployed app. You can run them manually with the backend migration tooling against the Neon production database.
 
 ## Package READMEs
 

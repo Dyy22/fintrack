@@ -14,6 +14,10 @@ import (
 
 func main() {
 	cfg := config.Load()
+	if err := cfg.Validate(); err != nil {
+		log.Fatalf("invalid configuration: %v", err)
+	}
+	log.Printf("starting fintrack api: env=%s port=%s database_url_configured=%t", cfg.AppEnv, cfg.Port, cfg.HasDatabaseURL())
 
 	db, err := database.Open(cfg.DatabaseURL())
 	if err != nil {

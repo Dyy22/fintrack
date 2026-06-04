@@ -13,6 +13,7 @@ func TestLoadUsesDefaults(t *testing.T) {
 	t.Setenv("DB_NAME", "")
 	t.Setenv("DB_USER", "")
 	t.Setenv("DB_PASSWORD", "")
+	t.Setenv("DATABASE_URL", "")
 	t.Setenv("JWT_SECRET", "")
 	t.Setenv("JWT_EXPIRES_IN", "")
 	t.Setenv("CORS_ALLOWED_ORIGINS", "")
@@ -41,6 +42,7 @@ func TestLoadUsesEnvironmentValues(t *testing.T) {
 	t.Setenv("DB_NAME", "custom")
 	t.Setenv("DB_USER", "custom_user")
 	t.Setenv("DB_PASSWORD", "secret")
+	t.Setenv("DATABASE_URL", "")
 	t.Setenv("JWT_SECRET", "jwt-secret")
 	t.Setenv("JWT_EXPIRES_IN", "2h")
 	t.Setenv("CORS_ALLOWED_ORIGINS", "https://app.example.com, http://localhost:3000 ")
@@ -61,6 +63,34 @@ func TestLoadUsesEnvironmentValues(t *testing.T) {
 	}
 	if len(cfg.CORSAllowedOrigins) != 2 || cfg.CORSAllowedOrigins[0] != "https://app.example.com" || cfg.CORSAllowedOrigins[1] != "http://localhost:3000" {
 		t.Fatalf("unexpected cors origins: %+v", cfg.CORSAllowedOrigins)
+	}
+}
+
+func TestLoadUsesDatabaseURLWhenProvided(t *testing.T) {
+	t.Setenv("DATABASE_URL", "postgres://railway:secret@postgres.railway.internal:5432/railway")
+	t.Setenv("DB_HOST", "ignored")
+	t.Setenv("DB_PORT", "15432")
+	t.Setenv("DB_NAME", "ignored")
+	t.Setenv("DB_USER", "ignored")
+	t.Setenv("DB_PASSWORD", "ignored")
+
+	cfg := Load()
+
+	if cfg.DatabaseURL() != "postgres://railway:secret@postgres.railway.internal:5432/railway" {
+		t.Fatalf("unexpected database URL: %s", cfg.DatabaseURL())
+	}
+}
+
+func TestValidateRequiresDatabaseURLInProduction(t *testing.T) {
+	cfg := Config{AppEnv: "production"}
+
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("expected production config without DATABASE_URL to be invalid")
+	}
+
+	cfg.DatabaseURLValue = "postgres://user:secret@example.com:5432/db?sslmode=require"
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("expected production config with DATABASE_URL to be valid: %v", err)
 	}
 }
 
