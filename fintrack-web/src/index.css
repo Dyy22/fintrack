@@ -1,0 +1,307 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    color-scheme: light;
+    font-family: Inter, system-ui, sans-serif;
+    --neo-ink: #101828;
+    --neo-paper: #f7f1e3;
+    --neo-panel: #fffdf7;
+    --neo-muted: #475467;
+    --neo-primary: #60a5fa;
+    --neo-secondary: #86efac;
+    --neo-accent: #fde68a;
+    --neo-danger: #fca5a5;
+    --neo-shadow: #101828;
+}
+
+.dark {
+    color-scheme: dark;
+    --neo-ink: #f8fafc;
+    --neo-paper: #0f172a;
+    --neo-panel: #1e293b;
+    --neo-muted: #dbe4f0;
+    --neo-primary: #93c5fd;
+    --neo-secondary: #86efac;
+    --neo-accent: #fde68a;
+    --neo-danger: #fca5a5;
+    --neo-shadow: #f8fafc;
+}
+
+html {
+    overflow-x: clip;
+}
+
+body {
+    margin: 0;
+    min-width: 320px;
+    min-height: 100vh;
+    overflow-x: clip;
+    background-color: var(--neo-paper);
+    background-image:
+        radial-gradient(
+            circle at 1px 1px,
+            rgba(16, 24, 40, 0.14) 1px,
+            transparent 0
+        ),
+        linear-gradient(
+            135deg,
+            rgba(96, 165, 250, 0.12),
+            rgba(134, 239, 172, 0.14)
+        );
+    background-size:
+        24px 24px,
+        100% 100%;
+    color: var(--neo-ink);
+}
+
+.dark body {
+    background-color: #0f172a;
+    background-image:
+        radial-gradient(
+            circle at 1px 1px,
+            rgba(248, 250, 252, 0.1) 1px,
+            transparent 0
+        ),
+        linear-gradient(135deg, rgba(37, 99, 235, 0.2), rgba(15, 23, 42, 0.45));
+    color: #f8fafc;
+}
+
+button,
+input,
+select,
+textarea {
+    font: inherit;
+}
+
+input[type="date"] {
+    min-height: 2.75rem;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    border: 2px solid #101828;
+    border-radius: 0.5rem;
+    background-color: #93c5fd;
+    box-shadow: 2px 2px 0 0 #101828;
+    padding: 0.25rem;
+}
+
+.dark input[type="date"]::-webkit-calendar-picker-indicator {
+    border-color: #f8fafc;
+    background-color: #bfdbfe;
+    box-shadow: 2px 2px 0 0 #f8fafc;
+}
+
+@layer base {
+    h1,
+    h2,
+    h3 {
+        @apply font-black uppercase tracking-tight;
+    }
+
+    input:not([type="submit"]):not([type="button"]),
+    select,
+    textarea {
+        @apply border-2 border-slate-950 bg-white text-slate-950 shadow-[3px_3px_0_0_#101828] outline-none transition-all placeholder:text-slate-500 focus:-translate-y-0.5 focus:shadow-[5px_5px_0_0_#101828] focus:ring-0 dark:border-slate-100 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-300;
+    }
+}
+
+@layer components {
+    .neo-card {
+        @apply rounded-xl border-2 border-slate-950 bg-[#fffdf7] text-slate-950 shadow-[6px_6px_0_0_#101828] dark:border-slate-100 dark:bg-slate-800 dark:text-slate-100 dark:shadow-[6px_6px_0_0_#f8fafc];
+    }
+
+    .neo-surface {
+        @apply border-2 border-slate-950 bg-[#fffdf7] text-slate-950 shadow-[4px_4px_0_0_#101828] dark:border-slate-100 dark:bg-slate-800 dark:text-slate-100 dark:shadow-[4px_4px_0_0_#f8fafc];
+    }
+
+    .neo-button {
+        @apply inline-flex min-h-11 items-center justify-center rounded-xl border-2 border-slate-950 px-4 py-2 text-sm font-black uppercase tracking-wide text-slate-950 shadow-[4px_4px_0_0_#101828] transition-all hover:translate-x-1 hover:translate-y-1 hover:shadow-none focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 dark:border-slate-100 dark:shadow-[4px_4px_0_0_#f8fafc] dark:focus:ring-slate-100;
+    }
+
+    .neo-link {
+        @apply font-black text-blue-700 underline decoration-2 underline-offset-4 hover:text-slate-950 dark:text-blue-200 dark:hover:text-yellow-200;
+    }
+
+    .neo-empty {
+        @apply rounded-xl border-2 border-dashed border-slate-950 bg-blue-100 p-8 text-center shadow-[4px_4px_0_0_#101828] dark:border-slate-100 dark:bg-slate-800 dark:shadow-[4px_4px_0_0_#f8fafc];
+    }
+}
+
+input:not([type="submit"]):not([type="button"]),
+select,
+textarea {
+    border: 2px solid #101828 !important;
+    border-radius: 0.75rem !important;
+    background: #fffdf7 !important;
+    color: #101828 !important;
+    box-shadow: 3px 3px 0 0 #101828 !important;
+    font-weight: 700;
+}
+
+input:not([type="submit"]):not([type="button"]):focus,
+select:focus,
+textarea:focus {
+    border-color: #101828 !important;
+    box-shadow: 5px 5px 0 0 #101828 !important;
+    outline: none !important;
+}
+
+.dark input:not([type="submit"]):not([type="button"]),
+.dark select,
+.dark textarea {
+    border-color: #f8fafc !important;
+    background: #1e293b !important;
+    color: #f8fafc !important;
+    box-shadow: 3px 3px 0 0 #f8fafc !important;
+}
+
+.dark input:not([type="submit"]):not([type="button"]):focus,
+.dark select:focus,
+.dark textarea:focus {
+    border-color: #f8fafc !important;
+    box-shadow: 5px 5px 0 0 #f8fafc !important;
+}
+
+/* Contrast fixes for old utility classes that remain in page markup. */
+.dark .text-slate-300,
+.dark .text-slate-400,
+.dark .text-slate-500,
+.dark .text-slate-600 {
+    color: #dbe4f0 !important;
+}
+
+.dark label > .text-slate-700,
+.dark th.text-slate-500,
+.dark td.text-slate-500,
+.dark p.text-slate-500,
+.dark p.text-slate-600 {
+    color: #dbe4f0 !important;
+}
+
+.dark .bg-slate-100 {
+    background-color: #334155 !important;
+}
+
+.dark .border-slate-100,
+.dark .border-slate-200,
+.dark .border-slate-300 {
+    border-color: #f8fafc !important;
+}
+
+select {
+    min-height: 2.75rem;
+    appearance: none;
+    background-image:
+        linear-gradient(45deg, transparent 50%, #101828 50%),
+        linear-gradient(135deg, #101828 50%, transparent 50%),
+        linear-gradient(to right, #101828, #101828) !important;
+    background-position:
+        calc(100% - 1.1rem) 50%,
+        calc(100% - 0.75rem) 50%,
+        calc(100% - 2.25rem) 50% !important;
+    background-size:
+        0.35rem 0.35rem,
+        0.35rem 0.35rem,
+        2px 1.6rem !important;
+    background-repeat: no-repeat !important;
+    padding-right: 2.75rem !important;
+}
+
+.dark select {
+    background-image:
+        linear-gradient(45deg, transparent 50%, #f8fafc 50%),
+        linear-gradient(135deg, #f8fafc 50%, transparent 50%),
+        linear-gradient(to right, #f8fafc, #f8fafc) !important;
+}
+
+option {
+    background: #fffdf7;
+    color: #101828;
+    font-weight: 800;
+}
+
+option:checked {
+    background: #bfdbfe;
+    color: #101828;
+}
+
+.dark option {
+    background: #1e293b;
+    color: #f8fafc;
+}
+
+.dark option:checked {
+    background: #334155;
+    color: #f8fafc;
+}
+
+.neo-card table {
+    border-collapse: separate;
+    border-spacing: 0 0.5rem;
+}
+
+.neo-card thead tr {
+    border: 0 !important;
+}
+
+.neo-card th {
+    padding: 0.75rem;
+    border-bottom: 2px solid #101828;
+    color: #101828;
+    font-weight: 900 !important;
+    text-transform: uppercase;
+}
+
+.dark .neo-card th {
+    border-color: #f8fafc;
+    color: #f8fafc;
+}
+
+.neo-card tbody tr {
+    border: 2px solid #101828 !important;
+    background: #fffdf7;
+    box-shadow: 3px 3px 0 0 #101828;
+}
+
+.dark .neo-card tbody tr {
+    border-color: #f8fafc !important;
+    background: #1e293b;
+    box-shadow: 3px 3px 0 0 #f8fafc;
+}
+
+.neo-card tbody td {
+    padding: 0.75rem;
+    border-top: 2px solid #101828;
+    border-bottom: 2px solid #101828;
+}
+
+.neo-card tbody td:first-child {
+    border-left: 2px solid #101828;
+    border-radius: 0.75rem 0 0 0.75rem;
+}
+
+.neo-card tbody td:last-child {
+    border-right: 2px solid #101828;
+    border-radius: 0 0.75rem 0.75rem 0;
+}
+
+.dark .neo-card tbody td {
+    border-color: #f8fafc;
+}
+
+.neo-card ul > li {
+    border: 2px solid #101828;
+    border-radius: 0.75rem;
+    background: #fffdf7;
+    padding: 0.75rem;
+    box-shadow: 3px 3px 0 0 #101828;
+}
+
+.dark .neo-card ul > li {
+    border-color: #f8fafc;
+    background: #1e293b;
+    box-shadow: 3px 3px 0 0 #f8fafc;
+}

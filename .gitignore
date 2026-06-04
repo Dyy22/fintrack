@@ -1,7 +1,3 @@
-# Separate git repos
-fintrack-backend/
-fintrack-web/
-
 # Dependencies
 node_modules/
 

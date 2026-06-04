@@ -1,0 +1,6 @@
+.env
+*.out
+*.test
+bin/
+.vscode/
+.zed/
