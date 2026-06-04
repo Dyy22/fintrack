@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/Dyy22/fintract/actions/workflows/ci.yml/badge.svg)](https://github.com/Dyy22/fintract/actions/workflows/ci.yml)
 [![Deploy](https://github.com/Dyy22/fintract/actions/workflows/deploy.yml/badge.svg)](https://github.com/Dyy22/fintract/actions/workflows/deploy.yml)
+[![Production Database Migrations](https://github.com/Dyy22/fintract/actions/workflows/migrate.yml/badge.svg)](https://github.com/Dyy22/fintract/actions/workflows/migrate.yml)
 
 Fintrack is a personal finance tracker built as a monorepo with a Go backend and a React frontend.
 
@@ -12,12 +13,13 @@ Fintrack is a personal finance tracker built as a monorepo with a Go backend and
 | Frontend | Vercel | Production deployed |
 | Backend API | Render | Production deployed |
 | Database | Neon Postgres | Production configured and migrated |
-| CI/CD | GitHub Actions | `CI` then `Deploy` on `main` |
+| CI/CD | GitHub Actions | `CI` then `Deploy` on `main`; manual `Production Database Migrations` |
 
 Production flow:
 
 ```txt
 push to main -> CI -> Render backend deploy hook; Vercel deploys frontend from Git integration
+manual workflow_dispatch -> Production Database Migrations -> Neon
 ```
 
 ## Project structure
@@ -202,7 +204,21 @@ After changing Vercel environment variables, redeploy the frontend so Vite can b
 
 ### Database migrations
 
-Apply migrations from `fintrack-backend/migrations` to the production database before using the deployed app. The migration script supports `DATABASE_URL`, so you can run it against Neon from your local machine:
+Apply migrations from `fintrack-backend/migrations` to the production database before using the deployed app.
+
+Recommended production path:
+
+1. Add this repository secret in GitHub Actions:
+
+   ```txt
+   PRODUCTION_DATABASE_URL=your_neon_pooled_connection_string
+   ```
+
+2. Open **Actions** → **Production Database Migrations**.
+3. Click **Run workflow** from the `main` branch.
+4. Type `MIGRATE` in the confirmation field.
+
+The same migration script also supports local execution against Neon if needed:
 
 ```bash
 cd fintrack-backend

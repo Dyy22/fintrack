@@ -87,7 +87,19 @@ Apply local migrations:
 make db-migrate
 ```
 
-Apply production migrations against Neon:
+Apply production migrations against Neon through the manual GitHub Actions workflow:
+
+1. Add this repository secret in GitHub Actions:
+
+   ```txt
+   PRODUCTION_DATABASE_URL=your_neon_pooled_connection_string
+   ```
+
+2. Open **Actions** → **Production Database Migrations**.
+3. Click **Run workflow** from the `main` branch.
+4. Type `MIGRATE` in the confirmation field.
+
+You can also run the same migration script locally if needed:
 
 ```bash
 DATABASE_URL="your_neon_pooled_connection_string" make db-migrate
@@ -143,10 +155,11 @@ Render health check path:
 /api/v1/health
 ```
 
-GitHub Actions triggers Render deployment through the repository secret:
+GitHub Actions triggers Render deployment and manual production migrations through repository secrets:
 
 ```txt
 RENDER_DEPLOY_HOOK_URL
+PRODUCTION_DATABASE_URL
 ```
 
 ## Main endpoints

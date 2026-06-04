@@ -1,0 +1,43 @@
+name: Production Database Migrations
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: 'Type MIGRATE to run production database migrations'
+        required: true
+        type: string
+
+concurrency:
+  group: production-database-migrations
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    name: Run production database migrations
+    runs-on: ubuntu-latest
+    if: github.ref_name == 'main' && inputs.confirmation == 'MIGRATE'
+    environment: production
+    defaults:
+      run:
+        working-directory: fintrack-backend
+    env:
+      DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+
+      - name: Validate database secret
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "Missing required secret: PRODUCTION_DATABASE_URL" >&2
+            exit 1
+          fi
+
+      - name: Apply pending migrations
+        run: make db-migrate
