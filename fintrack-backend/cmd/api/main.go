@@ -30,7 +30,7 @@ func main() {
 	goldProvider := gold.NewProvider(cfg.GoldPriceSourceURL, cfg.GoldPriceFallbackPerGram)
 	uc := usecase.New(repo, jwtService).WithGoldPriceProvider(goldProvider, cfg.GoldPriceRefreshInterval)
 	handler := httpHandler.New(uc)
-	router := httpHandler.Router(cfg, handler, jwtService)
+	router := httpHandler.Router(cfg, handler, jwtService, db)
 
 	if err := router.Run(":" + cfg.Port); err != nil {
 		log.Fatalf("server stopped: %v", err)

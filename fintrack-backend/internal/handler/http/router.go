@@ -1,6 +1,7 @@
 package http
 
 import (
+	"context"
 	"time"
 
 	"fintrack-backend/internal/config"
@@ -11,7 +12,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func Router(cfg config.Config, h *Handler, jwtService security.JWTService) *gin.Engine {
+type HealthPinger interface {
+	PingContext(ctx context.Context) error
+}
+
+func Router(cfg config.Config, h *Handler, jwtService security.JWTService, healthPinger HealthPinger) *gin.Engine {
 	if cfg.IsProduction() {
 		gin.SetMode(gin.ReleaseMode)
 	}
@@ -28,7 +33,7 @@ func Router(cfg config.Config, h *Handler, jwtService security.JWTService) *gin.
 	}))
 
 	api := r.Group("/api/v1")
-	api.GET("/health", func(c *gin.Context) { c.JSON(200, gin.H{"status": "ok"}) })
+	api.GET("/health", healthHandler(healthPinger))
 
 	auth := api.Group("/auth")
 	auth.POST("/register", h.Register)
