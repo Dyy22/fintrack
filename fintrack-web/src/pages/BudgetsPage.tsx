@@ -33,8 +33,17 @@ const currentYear = now.getFullYear();
 export function BudgetsPage() {
   usePageTitle("Budgets");
 
-  const { budgets, categories, loading, error, fetchBudgets, fetchCategories, createBudget, updateBudget, deleteBudget } =
-    useBudgetStore();
+  const {
+    budgets,
+    categories,
+    loading,
+    error,
+    fetchBudgets,
+    fetchCategories,
+    createBudget,
+    updateBudget,
+    deleteBudget,
+  } = useBudgetStore();
 
   const [selectedMonth, setSelectedMonth] = useState(String(currentMonth));
   const [selectedYear, setSelectedYear] = useState(String(currentYear));
@@ -67,6 +76,7 @@ export function BudgetsPage() {
   const categoryOptions = useMemo(() => {
     const usedCategoryIDs = new Set(budgets.map((b) => b.category_id));
     return categories
+      .filter((c) => c.type === "expense")
       .filter((c) => !usedCategoryIDs.has(c.id) || modalMode === "edit")
       .map((c) => ({ value: c.id, label: `${c.name} (${c.type})` }));
   }, [categories, budgets, modalMode]);
@@ -82,7 +92,13 @@ export function BudgetsPage() {
     setShowModal(true);
   }
 
-  function openEditModal(budget: { id: string; amount: number; category_id?: string; month?: number; year?: number }) {
+  function openEditModal(budget: {
+    id: string;
+    amount: number;
+    category_id?: string;
+    month?: number;
+    year?: number;
+  }) {
     setModalMode("edit");
     setEditBudgetId(budget.id);
     setFormCategoryID(budget.category_id ?? "");
@@ -196,9 +212,7 @@ export function BudgetsPage() {
       </Card>
 
       {/* Error banner */}
-      {error ? (
-        <NeoAlert variant="danger">{error}</NeoAlert>
-      ) : null}
+      {error ? <NeoAlert variant="danger">{error}</NeoAlert> : null}
 
       {/* Loading */}
       {loading ? (
@@ -214,7 +228,10 @@ export function BudgetsPage() {
             description='Click "Add Budget" to set a spending limit for a category.'
             icon="💰"
             action={
-              <Button onClick={openCreateModal} disabled={categories.length === 0}>
+              <Button
+                onClick={openCreateModal}
+                disabled={categories.length === 0}
+              >
                 Add Budget
               </Button>
             }
@@ -381,11 +398,7 @@ function BudgetCard({ budget, onEdit, onDelete }: BudgetCardProps) {
         : "text-emerald-600";
 
   const barColor =
-    pct >= 100
-      ? "bg-red-400"
-      : pct >= 80
-        ? "bg-yellow-300"
-        : "bg-emerald-400";
+    pct >= 100 ? "bg-red-400" : pct >= 80 ? "bg-yellow-300" : "bg-emerald-400";
 
   return (
     <Card>
@@ -441,7 +454,9 @@ function BudgetCard({ budget, onEdit, onDelete }: BudgetCardProps) {
           </span>
           <span
             className={`font-black ${
-              budget.remaining < 0 ? "text-red-600" : "text-slate-950 dark:text-slate-100"
+              budget.remaining < 0
+                ? "text-red-600"
+                : "text-slate-950 dark:text-slate-100"
             }`}
           >
             {formatIDR(budget.remaining)}
