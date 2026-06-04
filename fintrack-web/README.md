@@ -33,6 +33,16 @@ VITE_API_BASE_URL=http://localhost:8080/api/v1
 
 For production builds, set `VITE_API_BASE_URL` before building because Vite embeds environment variables at build time.
 
+## API documentation
+
+The app exposes a public Scalar API reference at:
+
+```txt
+/docs/api
+```
+
+It loads the bundled OpenAPI asset from `public/openapi.yaml`, which should stay in sync with the repository-level [`../docs/openapi.yaml`](../docs/openapi.yaml).
+
 ## Scripts
 
 ```bash
