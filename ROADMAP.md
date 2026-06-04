@@ -1,7 +1,9 @@
 # Fintrack — Project Roadmap
 
-**Version**: 1.4  
+**Version**: v1.0.0  
 **Last Updated**: 4 June 2026
+
+> Tagged release: [`v1.0.0`](https://github.com/Dyy22/fintract/releases/tag/v1.0.0)
 
 ---
 
