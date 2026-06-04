@@ -1,3 +1,6 @@
+# Documentation
+*.md
+
 # Dependencies
 node_modules/
 
