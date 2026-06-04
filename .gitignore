@@ -1,5 +1,7 @@
 # Documentation
 *.md
+!README.md
+!**/README.md
 
 # Dependencies
 node_modules/
