@@ -4,7 +4,7 @@
 **Last Updated**: 5 June 2026
 
 > Latest tagged release: [`v1.0.0`](https://github.com/Dyy22/fintrack/releases/tag/v1.0.0)  
-> Current feature PR: [#4 Add IDX markets and persistent cache](https://github.com/Dyy22/fintrack/pull/4)
+> Stock and Markets scope is complete for the current roadmap. PR [#4 Add IDX markets and persistent cache](https://github.com/Dyy22/fintrack/pull/4) has been merged and deployed.
 
 ---
 
@@ -29,8 +29,8 @@
 | CI | ✅ | GitHub Actions validates backend, frontend, and Docker builds |
 | Deploy workflow | ✅ | Runs after CI success on `main`; triggers Render backend deploy |
 | Production docs | ✅ | Root/backend/frontend READMEs updated with deployment and license info |
-| IDX stock market data | 🚧 | Implemented in PR #4; pending merge/deploy/migration |
-| Persistent market cache | 🚧 | Implemented in PR #4 using DB-backed quote/chart cache; pending production migration |
+| IDX stock market data | ✅ | Deployed; supports IDX ticker validation, lots-based stock holdings, IHSG, and stock charts |
+| Persistent market cache | ✅ | Deployed; DB-backed quote/chart cache with stale fallback and cache status badges |
 
 Production flow:
 
@@ -78,7 +78,7 @@ push to main -> CI -> Render backend deploy hook; Vercel deploys frontend from G
 | `GET /api/v1/reports/spending-by-category` | ✅ | |
 | `GET /api/v1/gold/price` | ✅ | Current cached Antam gold price |
 | `GET /api/v1/gold/prices/history` | ✅ | Gold price history for Markets page chart |
-| `GET /api/v1/market/chart` | 🚧 | Implemented in PR #4; returns IHSG/IDX stock charts with persistent cache fallback |
+| `GET /api/v1/market/chart` | ✅ | Returns IHSG/IDX stock charts with persistent cache fallback and cache status metadata |
 
 ### Database
 
@@ -88,8 +88,8 @@ push to main -> CI -> Render backend deploy hook; Vercel deploys frontend from G
 | Seed: account_types | ✅ | bank, ewallet, cash, gold, stock_broker |
 | Seed: default categories | ✅ | Salary, Freelance, Investment, Food, Transport, Shopping, Bills, Entertainment |
 | Constraints: amount > 0, transfer rules, unique categories | ✅ | |
-| Migration files (up/down) | ✅ | 000001-000007 migrations; 000006 stock holdings and 000007 market cache pending merge/deploy |
-| Neon production database | ✅ | Production schema migrated through v1.0.0; market cache migration pending PR #4 deployment |
+| Migration files (up/down) | ✅ | 000001-000007 migrations; includes stock holdings and market cache |
+| Neon production database | ✅ | Production schema migrated through current stock/market cache schema |
 | Migration script supports `DATABASE_URL` | ✅ | Can run local or remote Neon migrations |
 
 ### Testing
@@ -181,7 +181,7 @@ push to main -> CI -> Render backend deploy hook; Vercel deploys frontend from G
 | Activate account | ✅ | Reactivate deactivated accounts |
 | Delete account | ✅ | Hard delete with confirm dialog |
 | Gold account holdings | ✅ | Gram-based account balance using latest gold price |
-| IDX stock account holdings | 🚧 | Implemented in PR #4; validates IDX tickers, stores lots, calculates value from latest quote |
+| IDX stock account holdings | ✅ | Current scope complete; validates IDX tickers, stores lots, calculates value from latest quote |
 
 ### Transactions
 
@@ -208,14 +208,15 @@ push to main -> CI -> Render backend deploy hook; Vercel deploys frontend from G
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Dedicated Markets page | 🚧 | Implemented in PR #4; separate menu/page for gold, IHSG, and portfolio stock charts |
-| IHSG chart | 🚧 | Implemented in PR #4 via Yahoo Finance chart provider |
-| IDX stock charts | 🚧 | Implemented in PR #4 for symbols from stock accounts |
-| Chart timeframe selector | 🚧 | Implemented in PR #4: 5D, 1M, 3M, 6M, 1Y |
-| Market data timestamps | 🚧 | Implemented in PR #4 using `fetched_at` metadata |
-| Persistent quote cache | 🚧 | Implemented in PR #4; DB cache TTL 5 minutes with stale fallback |
-| Persistent chart cache | 🚧 | Implemented in PR #4; DB cache TTL 15 minutes with stale fallback |
-| Yahoo Finance IDX compatibility | 🚧 | Implemented in PR #4; accepts JKT/Jakarta exchange metadata |
+| Dedicated Markets page | ✅ | Separate menu/page for gold, IHSG, and portfolio stock charts |
+| IHSG chart | ✅ | Uses Yahoo Finance chart provider with persistent cache fallback |
+| IDX stock charts | ✅ | Shows charts for symbols from stock accounts |
+| Chart timeframe selector | ✅ | 5D, 1M, 3M, 6M, 1Y |
+| Market data timestamps | ✅ | Uses `fetched_at` metadata |
+| Persistent quote cache | ✅ | DB cache TTL 5 minutes with stale fallback |
+| Persistent chart cache | ✅ | DB cache TTL 15 minutes with stale fallback |
+| Market cache status badge | ✅ | Shows Live/Cached/Stale status in Markets UI |
+| Yahoo Finance IDX compatibility | ✅ | Accepts JKT/Jakarta exchange metadata |
 
 ### UI Design — Neobrutalism
 
@@ -261,7 +262,7 @@ push to main -> CI -> Render backend deploy hook; Vercel deploys frontend from G
 | Manual migration workflow | ✅ | GitHub Action to run production migrations with a protected secret |
 | DB-aware health check | ✅ | Health check verifies database connectivity, returns `degraded` status on failure |
 | Secret scanning automation | ⬜ | Add GitHub secret scanning/gitleaks workflow |
-| Market cache production migration | 🚧 | PR #4 adds `000007_market_cache`; apply via migration workflow before/with backend deploy |
+| Market cache production migration | ✅ | `000007_market_cache` applied in production |
 
 ---
 
@@ -269,9 +270,8 @@ push to main -> CI -> Render backend deploy hook; Vercel deploys frontend from G
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Market cache status badge | 🚧 | Implemented in dev; backend exposes `cache_status` and Markets UI shows Live/Cached/Stale badges |
-| Market data error states | ⬜ | Per-card retry/unavailable state when provider and cache both fail |
-| Stock watchlist | ⬜ | Track IDX tickers without requiring stock account ownership |
+| Market data error states | ⬜ | Optional polish: per-card retry/unavailable state when provider and cache both fail |
+| Stock watchlist | ⬜ | Optional; stock scope is considered complete without this |
 | Cryptocurrency portfolio | ⬜ | |
 | Multi-currency support | ⬜ | |
 | Recurring transactions | ⬜ | |
@@ -287,10 +287,8 @@ push to main -> CI -> Render backend deploy hook; Vercel deploys frontend from G
 
 ## Recommended Next Priorities
 
-1. Merge PR #4 and run production migrations `000006_stock_holdings` and `000007_market_cache`.
-2. Verify Markets page in production after backend restart: IHSG, stock charts, timestamps, and cache fallback.
-3. Add clearer per-card market data error states.
-4. Add secret scanning automation (GitHub secret scanning or gitleaks).
-5. Audit log / account activity history.
-6. User profile and settings page.
-7. Recurring transactions.
+1. Add secret scanning automation (GitHub secret scanning or gitleaks).
+2. Audit log / account activity history.
+3. User profile and settings page.
+4. Recurring transactions.
+5. Optional polish: clearer per-card market data error states if Yahoo/cache both fail.
