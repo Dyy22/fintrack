@@ -9,6 +9,7 @@ import (
 	"fintrack-backend/internal/platform/database"
 	"fintrack-backend/internal/platform/gold"
 	"fintrack-backend/internal/platform/security"
+	"fintrack-backend/internal/platform/stock"
 	"fintrack-backend/internal/repository/postgres"
 	"fintrack-backend/internal/usecase"
 )
@@ -39,7 +40,10 @@ func main() {
 	jwtService := security.NewJWTService(cfg.JWTSecret, cfg.JWTExpiresIn)
 	repo := postgres.New(db)
 	goldProvider := gold.NewProvider(cfg.GoldPriceSourceURL, cfg.GoldPriceFallbackPerGram)
-	uc := usecase.New(repo, jwtService).WithGoldPriceProvider(goldProvider, cfg.GoldPriceRefreshInterval)
+	stockProvider := stock.NewProvider()
+	uc := usecase.New(repo, jwtService).
+		WithGoldPriceProvider(goldProvider, cfg.GoldPriceRefreshInterval).
+		WithStockMarketProvider(stockProvider)
 	handler := httpHandler.New(uc)
 	router := httpHandler.Router(cfg, handler, jwtService, db)
 

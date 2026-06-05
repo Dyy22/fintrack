@@ -20,7 +20,7 @@ type Repository interface {
 	ListAccounts(ctx context.Context, userID uuid.UUID) ([]domain.Account, error)
 	FindAccount(ctx context.Context, userID, accountID uuid.UUID) (domain.Account, error)
 	AccountTypeName(ctx context.Context, accountTypeID int) (string, error)
-	CreateAccount(ctx context.Context, userID uuid.UUID, name string, accountTypeID int, balance float64, goldGrams *float64, goldPrice *float64) (domain.Account, error)
+	CreateAccount(ctx context.Context, userID uuid.UUID, name string, accountTypeID int, balance float64, goldGrams *float64, goldPrice *float64, stockSymbol *string, stockLots *float64, stockPrice *float64) (domain.Account, error)
 	UpdateAccount(ctx context.Context, userID, accountID uuid.UUID, name *string, isActive *bool) (domain.Account, error)
 	SoftDeleteAccount(ctx context.Context, userID, accountID uuid.UUID) error
 	HardDeleteAccount(ctx context.Context, userID, accountID uuid.UUID) error
@@ -36,6 +36,11 @@ type Repository interface {
 	SaveGoldPrice(ctx context.Context, price domain.GoldPrice) (domain.GoldPrice, error)
 	ListGoldPriceHistory(ctx context.Context, days int) ([]domain.GoldPriceHistoryPoint, error)
 	RefreshGoldAccountBalances(ctx context.Context, price domain.GoldPrice) error
+	RefreshStockAccountBalance(ctx context.Context, userID uuid.UUID, accountID uuid.UUID, quote domain.StockQuote) error
+	LatestStockQuote(ctx context.Context, symbol string) (domain.StockQuote, error)
+	SaveStockQuote(ctx context.Context, quote domain.StockQuote) (domain.StockQuote, error)
+	LatestMarketChart(ctx context.Context, symbol, rng, interval string) (domain.MarketChart, error)
+	SaveMarketChart(ctx context.Context, symbol, rng, interval string, chart domain.MarketChart) (domain.MarketChart, error)
 	CreateBudget(ctx context.Context, userID uuid.UUID, categoryID uuid.UUID, month, year int, amount float64) (domain.Budget, error)
 	ListBudgets(ctx context.Context, userID uuid.UUID, month, year int) ([]domain.Budget, error)
 	UpdateBudget(ctx context.Context, userID, budgetID uuid.UUID, amount float64) (domain.Budget, error)
@@ -47,10 +52,21 @@ type GoldPriceProvider interface {
 	Latest(ctx context.Context) (domain.GoldPrice, error)
 }
 
+type StockMarketProvider interface {
+	Quote(ctx context.Context, symbol string) (domain.StockQuote, error)
+	Chart(ctx context.Context, symbol, rng, interval string) (domain.MarketChart, error)
+}
+
+const (
+	stockQuoteRefreshInterval  = 5 * time.Minute
+	marketChartRefreshInterval = 15 * time.Minute
+)
+
 type Usecases struct {
 	repo                     Repository
 	jwt                      security.JWTService
 	goldProvider             GoldPriceProvider
+	stockProvider            StockMarketProvider
 	goldPriceRefreshInterval time.Duration
 }
 
@@ -63,6 +79,11 @@ func (u *Usecases) WithGoldPriceProvider(provider GoldPriceProvider, refreshInte
 	if refreshInterval > 0 {
 		u.goldPriceRefreshInterval = refreshInterval
 	}
+	return u
+}
+
+func (u *Usecases) WithStockMarketProvider(provider StockMarketProvider) *Usecases {
+	u.stockProvider = provider
 	return u
 }
 
@@ -113,9 +134,10 @@ func (u *Usecases) ListAccounts(ctx context.Context, userID uuid.UUID) ([]domain
 	if price, err := u.LatestGoldPrice(ctx); err == nil {
 		_ = u.repo.RefreshGoldAccountBalances(ctx, price)
 	}
+	_ = u.refreshUserStockAccounts(ctx, userID)
 	return u.repo.ListAccounts(ctx, userID)
 }
-func (u *Usecases) CreateAccount(ctx context.Context, userID uuid.UUID, name string, accountTypeID int, balance float64, goldGrams *float64) (domain.Account, error) {
+func (u *Usecases) CreateAccount(ctx context.Context, userID uuid.UUID, name string, accountTypeID int, balance float64, goldGrams *float64, stockSymbol *string, stockLots *float64) (domain.Account, error) {
 	name = strings.TrimSpace(name)
 	if name == "" || accountTypeID <= 0 {
 		return domain.Account{}, response.ErrBadRequest
@@ -125,6 +147,8 @@ func (u *Usecases) CreateAccount(ctx context.Context, userID uuid.UUID, name str
 		return domain.Account{}, err
 	}
 	var goldPrice *float64
+	var normalizedStockSymbol *string
+	var stockPrice *float64
 	if accountType == "gold" {
 		if goldGrams == nil || *goldGrams < 0 || balance < 0 {
 			return domain.Account{}, response.ErrBadRequest
@@ -140,7 +164,37 @@ func (u *Usecases) CreateAccount(ctx context.Context, userID uuid.UUID, name str
 	} else {
 		goldGrams = nil
 	}
-	return u.repo.CreateAccount(ctx, userID, name, accountTypeID, balance, goldGrams, goldPrice)
+	if accountType == "stock_broker" {
+		if stockSymbol == nil || strings.TrimSpace(*stockSymbol) == "" || stockLots == nil || *stockLots <= 0 {
+			return domain.Account{}, response.ErrBadRequest
+		}
+		symbol := normalizeIDXSymbol(*stockSymbol)
+		if symbol == "" {
+			return domain.Account{}, response.ErrBadRequest
+		}
+		quote, quoteErr := u.StockQuote(ctx, symbol)
+		if quoteErr != nil || quote.Price <= 0 {
+			if !isKnownIDXSymbol(symbol) {
+				if quoteErr != nil {
+					return domain.Account{}, quoteErr
+				}
+				return domain.Account{}, response.ErrBadRequest
+			}
+			balance = 0
+		} else {
+			if quote.Currency != "" && quote.Currency != "IDR" {
+				return domain.Account{}, response.ErrBadRequest
+			}
+			balance = *stockLots * 100 * quote.Price
+			stockPrice = &quote.Price
+			symbol = quote.Symbol
+		}
+		normalizedStockSymbol = &symbol
+		name = symbol
+	} else {
+		stockLots = nil
+	}
+	return u.repo.CreateAccount(ctx, userID, name, accountTypeID, balance, goldGrams, goldPrice, normalizedStockSymbol, stockLots, stockPrice)
 }
 func (u *Usecases) UpdateAccount(ctx context.Context, userID, accountID uuid.UUID, name *string, isActive *bool) (domain.Account, error) {
 	if name != nil {
@@ -233,6 +287,7 @@ func (u *Usecases) NetWorth(ctx context.Context, userID uuid.UUID) (float64, []d
 	if price, err := u.LatestGoldPrice(ctx); err == nil {
 		_ = u.repo.RefreshGoldAccountBalances(ctx, price)
 	}
+	_ = u.refreshUserStockAccounts(ctx, userID)
 	return u.repo.NetWorth(ctx, userID)
 }
 
@@ -269,6 +324,69 @@ func (u *Usecases) GoldPriceHistory(ctx context.Context, days int) ([]domain.Gol
 	return u.repo.ListGoldPriceHistory(ctx, days)
 }
 
+func (u *Usecases) MarketChart(ctx context.Context, symbol, rng, interval string) (domain.MarketChart, error) {
+	if rng != "" && rng != "5d" && rng != "1mo" && rng != "3mo" && rng != "6mo" && rng != "1y" {
+		return domain.MarketChart{}, response.ErrBadRequest
+	}
+	if interval != "" && interval != "1d" && interval != "1wk" && interval != "1mo" {
+		return domain.MarketChart{}, response.ErrBadRequest
+	}
+	if rng == "" {
+		rng = "1mo"
+	}
+	if interval == "" {
+		interval = "1d"
+	}
+	symbol = normalizeMarketSymbol(symbol)
+	cached, cacheErr := u.repo.LatestMarketChart(ctx, symbol, rng, interval)
+	if cacheErr == nil && time.Since(cached.FetchedAt) < marketChartRefreshInterval {
+		return cached, nil
+	}
+	if u.stockProvider == nil {
+		return cached, cacheErr
+	}
+	fresh, fetchErr := u.stockProvider.Chart(ctx, symbol, rng, interval)
+	if fetchErr != nil {
+		if cacheErr == nil {
+			return cached, nil
+		}
+		return domain.MarketChart{}, fetchErr
+	}
+	fresh.Symbol = normalizeMarketSymbol(fresh.Symbol)
+	if fresh.FetchedAt.IsZero() {
+		fresh.FetchedAt = time.Now().UTC()
+	}
+	stored, err := u.repo.SaveMarketChart(ctx, symbol, rng, interval, fresh)
+	if err != nil {
+		return domain.MarketChart{}, err
+	}
+	return stored, nil
+}
+
+func (u *Usecases) StockQuote(ctx context.Context, symbol string) (domain.StockQuote, error) {
+	symbol = normalizeIDXSymbol(symbol)
+	cached, cacheErr := u.repo.LatestStockQuote(ctx, symbol)
+	if cacheErr == nil && time.Since(cached.FetchedAt) < stockQuoteRefreshInterval {
+		return cached, nil
+	}
+	if u.stockProvider == nil {
+		return cached, cacheErr
+	}
+	fresh, fetchErr := u.stockProvider.Quote(ctx, symbol)
+	if fetchErr != nil {
+		if cacheErr == nil {
+			return cached, nil
+		}
+		return domain.StockQuote{}, fetchErr
+	}
+	fresh.Symbol = normalizeIDXSymbol(fresh.Symbol)
+	stored, err := u.repo.SaveStockQuote(ctx, fresh)
+	if err != nil {
+		return domain.StockQuote{}, err
+	}
+	return stored, nil
+}
+
 func (u *Usecases) SpendingByCategory(ctx context.Context, userID uuid.UUID, startDate, endDate string) (time.Time, time.Time, float64, []domain.SpendingCategory, float64, error) {
 	start, end, err := reportRange(startDate, endDate)
 	if err != nil {
@@ -276,6 +394,27 @@ func (u *Usecases) SpendingByCategory(ctx context.Context, userID uuid.UUID, sta
 	}
 	total, items, totalIncome, err := u.repo.SpendingByCategory(ctx, userID, start, end)
 	return start, end.AddDate(0, 0, -1), total, items, totalIncome, err
+}
+
+func (u *Usecases) refreshUserStockAccounts(ctx context.Context, userID uuid.UUID) error {
+	if u.stockProvider == nil {
+		return nil
+	}
+	accounts, err := u.repo.ListAccounts(ctx, userID)
+	if err != nil {
+		return err
+	}
+	for _, account := range accounts {
+		if account.Type != "stock_broker" || account.StockSymbol == nil || account.StockLots == nil || !account.IsActive {
+			continue
+		}
+		quote, err := u.StockQuote(ctx, *account.StockSymbol)
+		if err != nil {
+			continue
+		}
+		_ = u.repo.RefreshStockAccountBalance(ctx, userID, account.ID, quote)
+	}
+	return nil
 }
 
 func (u *Usecases) validateGoldTransactionAmount(ctx context.Context, tx domain.Transaction) error {
@@ -316,6 +455,64 @@ func goldValueMatches(amount, grams, pricePerGram float64) bool {
 }
 
 func normalizeEmail(email string) string { return strings.ToLower(strings.TrimSpace(email)) }
+
+func normalizeIDXSymbol(symbol string) string {
+	symbol = strings.ToUpper(strings.TrimSpace(symbol))
+	symbol = strings.TrimSuffix(symbol, ".JK")
+	return symbol
+}
+
+func normalizeMarketSymbol(symbol string) string {
+	symbol = strings.ToUpper(strings.TrimSpace(symbol))
+	if symbol == "" || symbol == "IHSG" || symbol == "JKSE" || symbol == "^JKSE" {
+		return "IHSG"
+	}
+	return normalizeIDXSymbol(symbol)
+}
+
+func isKnownIDXSymbol(symbol string) bool {
+	_, ok := knownIDXSymbols[normalizeIDXSymbol(symbol)]
+	return ok
+}
+
+var knownIDXSymbols = map[string]struct{}{
+	"AALI": {},
+	"ACES": {},
+	"ADRO": {},
+	"AKRA": {},
+	"ANTM": {},
+	"ARTO": {},
+	"ASII": {},
+	"BBCA": {},
+	"BBNI": {},
+	"BBRI": {},
+	"BBTN": {},
+	"BMRI": {},
+	"BRIS": {},
+	"BRPT": {},
+	"BUKA": {},
+	"CPIN": {},
+	"EMTK": {},
+	"ERAA": {},
+	"EXCL": {},
+	"GOTO": {},
+	"ICBP": {},
+	"INCO": {},
+	"INDF": {},
+	"INKP": {},
+	"INTP": {},
+	"ITMG": {},
+	"KLBF": {},
+	"MDKA": {},
+	"MEDC": {},
+	"PGAS": {},
+	"PTBA": {},
+	"SMGR": {},
+	"TLKM": {},
+	"TOWR": {},
+	"UNTR": {},
+	"UNVR": {},
+}
 
 func normalizePagination(limit, offset int) (int, int, error) {
 	if limit == 0 {

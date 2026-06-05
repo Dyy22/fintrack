@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"strconv"
 	"time"
@@ -54,7 +55,7 @@ func (r *Repositories) ListAccountTypes(ctx context.Context) ([]domain.AccountTy
 }
 
 func (r *Repositories) ListAccounts(ctx context.Context, userID uuid.UUID) ([]domain.Account, error) {
-	rows, err := r.db.QueryContext(ctx, `SELECT a.id,a.user_id,a.account_type_id,t.name,a.name,a.balance,a.currency,a.gold_grams,a.gold_price_per_gram,a.is_active,a.created_at,a.updated_at FROM accounts a JOIN account_types t ON t.id=a.account_type_id WHERE a.user_id=$1 ORDER BY a.created_at DESC`, userID)
+	rows, err := r.db.QueryContext(ctx, `SELECT a.id,a.user_id,a.account_type_id,t.name,a.name,a.balance,a.currency,a.gold_grams,a.gold_price_per_gram,a.stock_symbol,a.stock_lots,a.stock_price_per_share,a.is_active,a.created_at,a.updated_at FROM accounts a JOIN account_types t ON t.id=a.account_type_id WHERE a.user_id=$1 ORDER BY a.created_at DESC`, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +63,7 @@ func (r *Repositories) ListAccounts(ctx context.Context, userID uuid.UUID) ([]do
 	var accounts []domain.Account
 	for rows.Next() {
 		var a domain.Account
-		if err := rows.Scan(&a.ID, &a.UserID, &a.AccountTypeID, &a.Type, &a.Name, &a.Balance, &a.Currency, &a.GoldGrams, &a.GoldPrice, &a.IsActive, &a.CreatedAt, &a.UpdatedAt); err != nil {
+		if err := rows.Scan(&a.ID, &a.UserID, &a.AccountTypeID, &a.Type, &a.Name, &a.Balance, &a.Currency, &a.GoldGrams, &a.GoldPrice, &a.StockSymbol, &a.StockLots, &a.StockPricePerShare, &a.IsActive, &a.CreatedAt, &a.UpdatedAt); err != nil {
 			return nil, err
 		}
 		accounts = append(accounts, a)
@@ -72,7 +73,7 @@ func (r *Repositories) ListAccounts(ctx context.Context, userID uuid.UUID) ([]do
 
 func (r *Repositories) FindAccount(ctx context.Context, userID, accountID uuid.UUID) (domain.Account, error) {
 	var a domain.Account
-	err := r.db.QueryRowContext(ctx, `SELECT a.id,a.user_id,a.account_type_id,t.name,a.name,a.balance,a.currency,a.gold_grams,a.gold_price_per_gram,a.is_active,a.created_at,a.updated_at FROM accounts a JOIN account_types t ON t.id=a.account_type_id WHERE a.user_id=$1 AND a.id=$2`, userID, accountID).Scan(&a.ID, &a.UserID, &a.AccountTypeID, &a.Type, &a.Name, &a.Balance, &a.Currency, &a.GoldGrams, &a.GoldPrice, &a.IsActive, &a.CreatedAt, &a.UpdatedAt)
+	err := r.db.QueryRowContext(ctx, `SELECT a.id,a.user_id,a.account_type_id,t.name,a.name,a.balance,a.currency,a.gold_grams,a.gold_price_per_gram,a.stock_symbol,a.stock_lots,a.stock_price_per_share,a.is_active,a.created_at,a.updated_at FROM accounts a JOIN account_types t ON t.id=a.account_type_id WHERE a.user_id=$1 AND a.id=$2`, userID, accountID).Scan(&a.ID, &a.UserID, &a.AccountTypeID, &a.Type, &a.Name, &a.Balance, &a.Currency, &a.GoldGrams, &a.GoldPrice, &a.StockSymbol, &a.StockLots, &a.StockPricePerShare, &a.IsActive, &a.CreatedAt, &a.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return domain.Account{}, response.ErrNotFound
 	}
@@ -88,9 +89,9 @@ func (r *Repositories) AccountTypeName(ctx context.Context, accountTypeID int) (
 	return name, err
 }
 
-func (r *Repositories) CreateAccount(ctx context.Context, userID uuid.UUID, name string, accountTypeID int, balance float64, goldGrams *float64, goldPrice *float64) (domain.Account, error) {
+func (r *Repositories) CreateAccount(ctx context.Context, userID uuid.UUID, name string, accountTypeID int, balance float64, goldGrams *float64, goldPrice *float64, stockSymbol *string, stockLots *float64, stockPrice *float64) (domain.Account, error) {
 	var a domain.Account
-	err := r.db.QueryRowContext(ctx, `INSERT INTO accounts (user_id,account_type_id,name,balance,gold_grams,gold_price_per_gram) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id,user_id,account_type_id,name,balance,currency,gold_grams,gold_price_per_gram,is_active,created_at,updated_at`, userID, accountTypeID, name, balance, goldGrams, goldPrice).Scan(&a.ID, &a.UserID, &a.AccountTypeID, &a.Name, &a.Balance, &a.Currency, &a.GoldGrams, &a.GoldPrice, &a.IsActive, &a.CreatedAt, &a.UpdatedAt)
+	err := r.db.QueryRowContext(ctx, `INSERT INTO accounts (user_id,account_type_id,name,balance,gold_grams,gold_price_per_gram,stock_symbol,stock_lots,stock_price_per_share) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id,user_id,account_type_id,name,balance,currency,gold_grams,gold_price_per_gram,stock_symbol,stock_lots,stock_price_per_share,is_active,created_at,updated_at`, userID, accountTypeID, name, balance, goldGrams, goldPrice, stockSymbol, stockLots, stockPrice).Scan(&a.ID, &a.UserID, &a.AccountTypeID, &a.Name, &a.Balance, &a.Currency, &a.GoldGrams, &a.GoldPrice, &a.StockSymbol, &a.StockLots, &a.StockPricePerShare, &a.IsActive, &a.CreatedAt, &a.UpdatedAt)
 	if err != nil {
 		return domain.Account{}, err
 	}
@@ -100,7 +101,7 @@ func (r *Repositories) CreateAccount(ctx context.Context, userID uuid.UUID, name
 
 func (r *Repositories) UpdateAccount(ctx context.Context, userID, accountID uuid.UUID, name *string, isActive *bool) (domain.Account, error) {
 	var current domain.Account
-	err := r.db.QueryRowContext(ctx, `SELECT id,user_id,account_type_id,name,balance,currency,gold_grams,gold_price_per_gram,is_active,created_at,updated_at FROM accounts WHERE user_id=$1 AND id=$2`, userID, accountID).Scan(&current.ID, &current.UserID, &current.AccountTypeID, &current.Name, &current.Balance, &current.Currency, &current.GoldGrams, &current.GoldPrice, &current.IsActive, &current.CreatedAt, &current.UpdatedAt)
+	err := r.db.QueryRowContext(ctx, `SELECT id,user_id,account_type_id,name,balance,currency,gold_grams,gold_price_per_gram,stock_symbol,stock_lots,stock_price_per_share,is_active,created_at,updated_at FROM accounts WHERE user_id=$1 AND id=$2`, userID, accountID).Scan(&current.ID, &current.UserID, &current.AccountTypeID, &current.Name, &current.Balance, &current.Currency, &current.GoldGrams, &current.GoldPrice, &current.StockSymbol, &current.StockLots, &current.StockPricePerShare, &current.IsActive, &current.CreatedAt, &current.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return domain.Account{}, response.ErrNotFound
 	}
@@ -113,7 +114,7 @@ func (r *Repositories) UpdateAccount(ctx context.Context, userID, accountID uuid
 	if isActive != nil {
 		current.IsActive = *isActive
 	}
-	err = r.db.QueryRowContext(ctx, `UPDATE accounts SET name=$3,is_active=$4,updated_at=NOW() WHERE user_id=$1 AND id=$2 RETURNING id,user_id,account_type_id,name,balance,currency,gold_grams,gold_price_per_gram,is_active,created_at,updated_at`, userID, accountID, current.Name, current.IsActive).Scan(&current.ID, &current.UserID, &current.AccountTypeID, &current.Name, &current.Balance, &current.Currency, &current.GoldGrams, &current.GoldPrice, &current.IsActive, &current.CreatedAt, &current.UpdatedAt)
+	err = r.db.QueryRowContext(ctx, `UPDATE accounts SET name=$3,is_active=$4,updated_at=NOW() WHERE user_id=$1 AND id=$2 RETURNING id,user_id,account_type_id,name,balance,currency,gold_grams,gold_price_per_gram,stock_symbol,stock_lots,stock_price_per_share,is_active,created_at,updated_at`, userID, accountID, current.Name, current.IsActive).Scan(&current.ID, &current.UserID, &current.AccountTypeID, &current.Name, &current.Balance, &current.Currency, &current.GoldGrams, &current.GoldPrice, &current.StockSymbol, &current.StockLots, &current.StockPricePerShare, &current.IsActive, &current.CreatedAt, &current.UpdatedAt)
 	if err != nil {
 		return domain.Account{}, err
 	}
@@ -432,6 +433,115 @@ func (r *Repositories) ListGoldPriceHistory(ctx context.Context, days int) ([]do
 func (r *Repositories) RefreshGoldAccountBalances(ctx context.Context, price domain.GoldPrice) error {
 	_, err := r.db.ExecContext(ctx, `UPDATE accounts a SET balance=ROUND((a.gold_grams * $1)::numeric, 2), gold_price_per_gram=$1, updated_at=NOW() FROM account_types t WHERE t.id=a.account_type_id AND t.name='gold' AND a.gold_grams IS NOT NULL`, price.PricePerGram)
 	return err
+}
+
+func (r *Repositories) RefreshStockAccountBalance(ctx context.Context, userID uuid.UUID, accountID uuid.UUID, quote domain.StockQuote) error {
+	res, err := r.db.ExecContext(ctx, `UPDATE accounts a SET balance=ROUND((a.stock_lots * 100 * $3)::numeric, 2), stock_symbol=$4, stock_price_per_share=$3, updated_at=NOW() FROM account_types t WHERE t.id=a.account_type_id AND t.name='stock_broker' AND a.user_id=$1 AND a.id=$2 AND a.stock_lots IS NOT NULL`, userID, accountID, quote.Price, quote.Symbol)
+	if err != nil {
+		return err
+	}
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		return response.ErrNotFound
+	}
+	return nil
+}
+
+func (r *Repositories) LatestStockQuote(ctx context.Context, symbol string) (domain.StockQuote, error) {
+	var quote domain.StockQuote
+	var name sql.NullString
+	err := r.db.QueryRowContext(ctx, `SELECT symbol,name,price,currency,source,fetched_at FROM stock_quotes WHERE symbol=$1`, symbol).Scan(&quote.Symbol, &name, &quote.Price, &quote.Currency, &quote.Source, &quote.FetchedAt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return domain.StockQuote{}, response.ErrNotFound
+	}
+	if err != nil {
+		return domain.StockQuote{}, err
+	}
+	if name.Valid {
+		quote.Name = name.String
+	}
+	return quote, nil
+}
+
+func (r *Repositories) SaveStockQuote(ctx context.Context, quote domain.StockQuote) (domain.StockQuote, error) {
+	if quote.FetchedAt.IsZero() {
+		quote.FetchedAt = time.Now().UTC()
+	}
+	if quote.Currency == "" {
+		quote.Currency = "IDR"
+	}
+	if quote.Source == "" {
+		quote.Source = "unknown"
+	}
+	var name sql.NullString
+	err := r.db.QueryRowContext(ctx, `INSERT INTO stock_quotes (symbol,name,price,currency,source,fetched_at,updated_at) VALUES ($1,$2,$3,$4,$5,$6,NOW()) ON CONFLICT (symbol) DO UPDATE SET name=EXCLUDED.name,price=EXCLUDED.price,currency=EXCLUDED.currency,source=EXCLUDED.source,fetched_at=EXCLUDED.fetched_at,updated_at=NOW() RETURNING symbol,name,price,currency,source,fetched_at`, quote.Symbol, nullString(quote.Name), quote.Price, quote.Currency, quote.Source, quote.FetchedAt).Scan(&quote.Symbol, &name, &quote.Price, &quote.Currency, &quote.Source, &quote.FetchedAt)
+	if err != nil {
+		return domain.StockQuote{}, err
+	}
+	if name.Valid {
+		quote.Name = name.String
+	} else {
+		quote.Name = ""
+	}
+	return quote, nil
+}
+
+func (r *Repositories) LatestMarketChart(ctx context.Context, symbol, rng, interval string) (domain.MarketChart, error) {
+	var chart domain.MarketChart
+	var name sql.NullString
+	var points []byte
+	err := r.db.QueryRowContext(ctx, `SELECT symbol,name,currency,source,fetched_at,points FROM market_charts WHERE symbol=$1 AND chart_range=$2 AND interval=$3`, symbol, rng, interval).Scan(&chart.Symbol, &name, &chart.Currency, &chart.Source, &chart.FetchedAt, &points)
+	if errors.Is(err, sql.ErrNoRows) {
+		return domain.MarketChart{}, response.ErrNotFound
+	}
+	if err != nil {
+		return domain.MarketChart{}, err
+	}
+	if name.Valid {
+		chart.Name = name.String
+	}
+	if err := json.Unmarshal(points, &chart.Points); err != nil {
+		return domain.MarketChart{}, err
+	}
+	return chart, nil
+}
+
+func (r *Repositories) SaveMarketChart(ctx context.Context, symbol, rng, interval string, chart domain.MarketChart) (domain.MarketChart, error) {
+	if chart.FetchedAt.IsZero() {
+		chart.FetchedAt = time.Now().UTC()
+	}
+	if chart.Currency == "" {
+		chart.Currency = "IDR"
+	}
+	if chart.Source == "" {
+		chart.Source = "unknown"
+	}
+	points, err := json.Marshal(chart.Points)
+	if err != nil {
+		return domain.MarketChart{}, err
+	}
+	var name sql.NullString
+	var storedPoints []byte
+	err = r.db.QueryRowContext(ctx, `INSERT INTO market_charts (symbol,chart_range,interval,name,currency,source,fetched_at,points,updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,NOW()) ON CONFLICT (symbol,chart_range,interval) DO UPDATE SET name=EXCLUDED.name,currency=EXCLUDED.currency,source=EXCLUDED.source,fetched_at=EXCLUDED.fetched_at,points=EXCLUDED.points,updated_at=NOW() RETURNING symbol,name,currency,source,fetched_at,points`, symbol, rng, interval, nullString(chart.Name), chart.Currency, chart.Source, chart.FetchedAt, points).Scan(&chart.Symbol, &name, &chart.Currency, &chart.Source, &chart.FetchedAt, &storedPoints)
+	if err != nil {
+		return domain.MarketChart{}, err
+	}
+	if name.Valid {
+		chart.Name = name.String
+	} else {
+		chart.Name = ""
+	}
+	if err := json.Unmarshal(storedPoints, &chart.Points); err != nil {
+		return domain.MarketChart{}, err
+	}
+	return chart, nil
+}
+
+func nullString(value string) any {
+	if value == "" {
+		return nil
+	}
+	return value
 }
 
 func (r *Repositories) CreateBudget(ctx context.Context, userID uuid.UUID, categoryID uuid.UUID, month, year int, amount float64) (domain.Budget, error) {

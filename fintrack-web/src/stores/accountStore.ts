@@ -13,6 +13,8 @@ type AccountState = {
     accountTypeID: number,
     balance: number,
     goldGrams?: number,
+    stockSymbol?: string,
+    stockLots?: number,
   ) => Promise<Account>;
   updateAccount: (
     accountID: string,
@@ -50,6 +52,8 @@ export const useAccountStore = create<AccountState>((set, get) => ({
     accountTypeID: number,
     balance: number,
     goldGrams?: number,
+    stockSymbol?: string,
+    stockLots?: number,
   ) {
     const payload: Record<string, unknown> = {
       name,
@@ -57,6 +61,8 @@ export const useAccountStore = create<AccountState>((set, get) => ({
       balance,
     };
     if (goldGrams !== undefined) payload.gold_grams = goldGrams;
+    if (stockSymbol !== undefined) payload.stock_symbol = stockSymbol;
+    if (stockLots !== undefined) payload.stock_lots = stockLots;
     const { data } = await api.post<Account>("/accounts", payload);
     set((state) => ({ accounts: [data, ...state.accounts] }));
     return data;

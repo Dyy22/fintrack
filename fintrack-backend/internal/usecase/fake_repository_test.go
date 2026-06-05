@@ -16,7 +16,7 @@ type fakeRepository struct {
 	listAccountsFn              func(ctx context.Context, userID uuid.UUID) ([]domain.Account, error)
 	findAccountFn               func(ctx context.Context, userID, accountID uuid.UUID) (domain.Account, error)
 	accountTypeNameFn           func(ctx context.Context, accountTypeID int) (string, error)
-	createAccountFn             func(ctx context.Context, userID uuid.UUID, name string, accountTypeID int, balance float64, goldGrams *float64, goldPrice *float64) (domain.Account, error)
+	createAccountFn             func(ctx context.Context, userID uuid.UUID, name string, accountTypeID int, balance float64, goldGrams *float64, goldPrice *float64, stockSymbol *string, stockLots *float64, stockPrice *float64) (domain.Account, error)
 	updateAccountFn             func(ctx context.Context, userID, accountID uuid.UUID, name *string, isActive *bool) (domain.Account, error)
 	softDeleteAccountFn         func(ctx context.Context, userID, accountID uuid.UUID) error
 	hardDeleteAccountFn         func(ctx context.Context, userID, accountID uuid.UUID) error
@@ -32,6 +32,11 @@ type fakeRepository struct {
 	saveGoldPriceFn             func(ctx context.Context, price domain.GoldPrice) (domain.GoldPrice, error)
 	listGoldPriceHistoryFn      func(ctx context.Context, days int) ([]domain.GoldPriceHistoryPoint, error)
 	refreshGoldFn               func(ctx context.Context, price domain.GoldPrice) error
+	refreshStockFn              func(ctx context.Context, userID uuid.UUID, accountID uuid.UUID, quote domain.StockQuote) error
+	latestStockQuoteFn          func(ctx context.Context, symbol string) (domain.StockQuote, error)
+	saveStockQuoteFn            func(ctx context.Context, quote domain.StockQuote) (domain.StockQuote, error)
+	latestMarketChartFn         func(ctx context.Context, symbol, rng, interval string) (domain.MarketChart, error)
+	saveMarketChartFn           func(ctx context.Context, symbol, rng, interval string, chart domain.MarketChart) (domain.MarketChart, error)
 	createBudgetFn              func(ctx context.Context, userID uuid.UUID, categoryID uuid.UUID, month, year int, amount float64) (domain.Budget, error)
 	listBudgetsFn               func(ctx context.Context, userID uuid.UUID, month, year int) ([]domain.Budget, error)
 	updateBudgetFn              func(ctx context.Context, userID, budgetID uuid.UUID, amount float64) (domain.Budget, error)
@@ -63,8 +68,8 @@ func (f fakeRepository) AccountTypeName(ctx context.Context, accountTypeID int) 
 	}
 	return "bank", nil
 }
-func (f fakeRepository) CreateAccount(ctx context.Context, userID uuid.UUID, name string, accountTypeID int, balance float64, goldGrams *float64, goldPrice *float64) (domain.Account, error) {
-	return f.createAccountFn(ctx, userID, name, accountTypeID, balance, goldGrams, goldPrice)
+func (f fakeRepository) CreateAccount(ctx context.Context, userID uuid.UUID, name string, accountTypeID int, balance float64, goldGrams *float64, goldPrice *float64, stockSymbol *string, stockLots *float64, stockPrice *float64) (domain.Account, error) {
+	return f.createAccountFn(ctx, userID, name, accountTypeID, balance, goldGrams, goldPrice, stockSymbol, stockLots, stockPrice)
 }
 func (f fakeRepository) UpdateAccount(ctx context.Context, userID, accountID uuid.UUID, name *string, isActive *bool) (domain.Account, error) {
 	return f.updateAccountFn(ctx, userID, accountID, name, isActive)
@@ -122,6 +127,36 @@ func (f fakeRepository) RefreshGoldAccountBalances(ctx context.Context, price do
 		return f.refreshGoldFn(ctx, price)
 	}
 	return nil
+}
+func (f fakeRepository) RefreshStockAccountBalance(ctx context.Context, userID uuid.UUID, accountID uuid.UUID, quote domain.StockQuote) error {
+	if f.refreshStockFn != nil {
+		return f.refreshStockFn(ctx, userID, accountID, quote)
+	}
+	return nil
+}
+func (f fakeRepository) LatestStockQuote(ctx context.Context, symbol string) (domain.StockQuote, error) {
+	if f.latestStockQuoteFn != nil {
+		return f.latestStockQuoteFn(ctx, symbol)
+	}
+	return domain.StockQuote{}, nil
+}
+func (f fakeRepository) SaveStockQuote(ctx context.Context, quote domain.StockQuote) (domain.StockQuote, error) {
+	if f.saveStockQuoteFn != nil {
+		return f.saveStockQuoteFn(ctx, quote)
+	}
+	return quote, nil
+}
+func (f fakeRepository) LatestMarketChart(ctx context.Context, symbol, rng, interval string) (domain.MarketChart, error) {
+	if f.latestMarketChartFn != nil {
+		return f.latestMarketChartFn(ctx, symbol, rng, interval)
+	}
+	return domain.MarketChart{}, nil
+}
+func (f fakeRepository) SaveMarketChart(ctx context.Context, symbol, rng, interval string, chart domain.MarketChart) (domain.MarketChart, error) {
+	if f.saveMarketChartFn != nil {
+		return f.saveMarketChartFn(ctx, symbol, rng, interval, chart)
+	}
+	return chart, nil
 }
 func (f fakeRepository) CreateBudget(ctx context.Context, userID uuid.UUID, categoryID uuid.UUID, month, year int, amount float64) (domain.Budget, error) {
 	if f.createBudgetFn != nil {

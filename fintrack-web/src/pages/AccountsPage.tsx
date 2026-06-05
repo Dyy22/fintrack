@@ -12,6 +12,10 @@ import { NeoTable } from "../components/common/NeoTable";
 import { Skeleton } from "../components/common/Skeleton";
 import { usePageTitle } from "../utils/usePageTitle";
 import { useAccountStore } from "../stores/accountStore";
+import {
+  accountDisplayBalance,
+  accountTypeLabel,
+} from "../utils/accountDisplay";
 import { formatGoldGrams, formatIDR } from "../utils/format";
 
 export function AccountsPage() {
@@ -66,7 +70,7 @@ export function AccountsPage() {
 
   const totalBalance = accounts
     .filter((account) => account.is_active)
-    .reduce((sum, account) => sum + account.balance, 0);
+    .reduce((sum, account) => sum + accountDisplayBalance(account), 0);
 
   type AccountRow = (typeof accounts)[number];
 
@@ -159,14 +163,16 @@ export function AccountsPage() {
       className: "capitalize",
       cell: (account: AccountRow) =>
         account.type === "gold" && account.gold_grams != null
-          ? `${account.type} • ${formatGoldGrams(account.gold_grams)}`
-          : account.type,
+          ? `${accountTypeLabel(account.type)} • ${formatGoldGrams(account.gold_grams)}`
+          : account.type === "stock_broker" && account.stock_lots != null
+            ? `${accountTypeLabel(account.type)} • ${account.stock_lots} lot @ ${formatIDR(account.stock_price_per_share)}`
+            : accountTypeLabel(account.type),
     },
     {
       key: "balance",
       header: "Balance",
       className: "font-semibold",
-      cell: (account: AccountRow) => formatIDR(account.balance),
+      cell: (account: AccountRow) => formatIDR(accountDisplayBalance(account)),
     },
     {
       key: "status",
@@ -267,10 +273,13 @@ export function AccountsPage() {
                   </div>
                 </div>
                 <p className="mt-1 text-xs capitalize text-slate-500">
-                  {account.type}
+                  {accountTypeLabel(account.type)}
                   {account.type === "gold" && account.gold_grams != null
                     ? ` • ${formatGoldGrams(account.gold_grams)}`
-                    : ""}
+                    : account.type === "stock_broker" &&
+                        account.stock_lots != null
+                      ? ` • ${account.stock_lots} lot @ ${formatIDR(account.stock_price_per_share)}`
+                      : ""}
                 </p>
                 {account.type === "gold" && account.gold_price_per_gram ? (
                   <p className="mt-1 text-xs text-slate-500">
@@ -278,7 +287,7 @@ export function AccountsPage() {
                   </p>
                 ) : null}
                 <p className="mt-2 text-lg font-bold text-slate-950 dark:text-slate-100">
-                  {formatIDR(account.balance)}
+                  {formatIDR(accountDisplayBalance(account))}
                 </p>
                 <div className="mt-3 [&>div]:flex-wrap">
                   {actionButtons(account)}

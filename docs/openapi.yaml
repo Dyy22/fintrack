@@ -4,7 +4,7 @@ info:
   version: 1.0.0
   description: |
     REST API for Fintrack, a personal finance tracker with accounts, categories,
-    transactions, gold price data, and financial reports.
+    transactions, gold/stock market data, and financial reports.
 servers:
   - url: https://your-render-backend-domain.onrender.com/api/v1
     description: Production
@@ -18,6 +18,7 @@ tags:
   - name: Categories
   - name: Transactions
   - name: Gold
+  - name: Markets
   - name: Reports
 paths:
   /health:
@@ -432,6 +433,46 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+  /market/chart:
+    get:
+      tags: [Markets]
+      summary: Get IHSG or IDX stock chart data
+      operationId: getMarketChart
+      parameters:
+        - name: symbol
+          in: query
+          required: false
+          schema:
+            type: string
+            default: IHSG
+            examples: [IHSG, BBCA, BMRI, TLKM]
+        - name: range
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [5d, 1mo, 3mo, 6mo, 1y]
+            default: 1mo
+        - name: interval
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [1d, 1wk, 1mo]
+            default: 1d
+      responses:
+        "200":
+          description: Market chart data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MarketChart"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /reports/net-worth:
     get:
       tags: [Reports]
@@ -480,7 +521,14 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [start_date, end_date, total_spending, total_income, categories]
+                required:
+                  [
+                    start_date,
+                    end_date,
+                    total_spending,
+                    total_income,
+                    categories,
+                  ]
                 properties:
                   start_date:
                     type: string
@@ -642,6 +690,15 @@ components:
         gold_price_per_gram:
           type: number
           format: double
+        stock_symbol:
+          type: string
+          example: BBCA
+        stock_lots:
+          type: number
+          format: double
+        stock_price_per_share:
+          type: number
+          format: double
         is_active:
           type: boolean
         created_at:
@@ -665,6 +722,14 @@ components:
         gold_grams:
           type: number
           format: double
+        stock_symbol:
+          type: string
+          description: Required for stock_broker accounts; must be a valid IDX ticker.
+          example: BBCA
+        stock_lots:
+          type: number
+          format: double
+          description: Required for stock_broker accounts. 1 lot equals 100 shares.
     UpdateAccountRequest:
       type: object
       properties:
@@ -816,13 +881,49 @@ components:
           format: double
         source:
           type: string
+    MarketChartPoint:
+      type: object
+      required: [time, close]
+      properties:
+        time:
+          type: string
+          format: date-time
+        close:
+          type: number
+          format: double
+    MarketChart:
+      type: object
+      required: [symbol, currency, source, points]
+      properties:
+        symbol:
+          type: string
+          example: BBCA
+        name:
+          type: string
+        currency:
+          type: string
+          example: IDR
+        source:
+          type: string
+          example: Yahoo Finance
+        points:
+          type: array
+          items:
+            $ref: "#/components/schemas/MarketChartPoint"
     ErrorResponse:
       type: object
       required: [error, message]
       properties:
         error:
           type: string
-          examples: [bad_request, unauthorized, not_found, conflict, internal_server_error]
+          examples:
+            [
+              bad_request,
+              unauthorized,
+              not_found,
+              conflict,
+              internal_server_error,
+            ]
         message:
           type: string
     ValidationErrorResponse:

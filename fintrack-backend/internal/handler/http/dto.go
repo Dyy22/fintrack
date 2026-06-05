@@ -17,6 +17,8 @@ type createAccountRequest struct {
 	AccountTypeID int      `json:"account_type_id" binding:"required"`
 	Balance       float64  `json:"balance"`
 	GoldGrams     *float64 `json:"gold_grams"`
+	StockSymbol   *string  `json:"stock_symbol"`
+	StockLots     *float64 `json:"stock_lots"`
 }
 
 type updateAccountRequest struct {

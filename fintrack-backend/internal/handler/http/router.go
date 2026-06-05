@@ -58,6 +58,7 @@ func Router(cfg config.Config, h *Handler, jwtService security.JWTService, healt
 
 	protected.GET("/gold/price", h.GoldPrice)
 	protected.GET("/gold/prices/history", h.GoldPriceHistory)
+	protected.GET("/market/chart", h.MarketChart)
 
 	protected.GET("/reports/net-worth", h.NetWorth)
 	protected.GET("/reports/spending-by-category", h.SpendingByCategory)
