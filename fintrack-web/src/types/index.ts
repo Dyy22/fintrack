@@ -79,12 +79,15 @@ export type MarketChartPoint = {
   close: number;
 };
 
+export type MarketCacheStatus = "live" | "cached" | "stale";
+
 export type MarketChart = {
   symbol: string;
   name?: string;
   currency: string;
   source: string;
   fetched_at: string;
+  cache_status?: MarketCacheStatus;
   points: MarketChartPoint[];
 };
 

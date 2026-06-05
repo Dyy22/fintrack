@@ -269,7 +269,7 @@ push to main -> CI -> Render backend deploy hook; Vercel deploys frontend from G
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Market cache status badge | ⬜ | Show Live/Cached/Stale status in Markets UI |
+| Market cache status badge | 🚧 | Implemented in dev; backend exposes `cache_status` and Markets UI shows Live/Cached/Stale badges |
 | Market data error states | ⬜ | Per-card retry/unavailable state when provider and cache both fail |
 | Stock watchlist | ⬜ | Track IDX tickers without requiring stock account ownership |
 | Cryptocurrency portfolio | ⬜ | |
@@ -289,7 +289,7 @@ push to main -> CI -> Render backend deploy hook; Vercel deploys frontend from G
 
 1. Merge PR #4 and run production migrations `000006_stock_holdings` and `000007_market_cache`.
 2. Verify Markets page in production after backend restart: IHSG, stock charts, timestamps, and cache fallback.
-3. Add market cache status badge (`Live` / `Cached` / `Stale`) and clearer per-card error states.
+3. Add clearer per-card market data error states.
 4. Add secret scanning automation (GitHub secret scanning or gitleaks).
 5. Audit log / account activity history.
 6. User profile and settings page.

@@ -86,12 +86,13 @@ type GoldPriceHistoryPoint struct {
 }
 
 type StockQuote struct {
-	Symbol    string    `json:"symbol"`
-	Name      string    `json:"name,omitempty"`
-	Price     float64   `json:"price"`
-	Currency  string    `json:"currency"`
-	Source    string    `json:"source"`
-	FetchedAt time.Time `json:"fetched_at"`
+	Symbol      string    `json:"symbol"`
+	Name        string    `json:"name,omitempty"`
+	Price       float64   `json:"price"`
+	Currency    string    `json:"currency"`
+	Source      string    `json:"source"`
+	FetchedAt   time.Time `json:"fetched_at"`
+	CacheStatus string    `json:"cache_status,omitempty"`
 }
 
 type MarketChartPoint struct {
@@ -100,12 +101,13 @@ type MarketChartPoint struct {
 }
 
 type MarketChart struct {
-	Symbol    string             `json:"symbol"`
-	Name      string             `json:"name,omitempty"`
-	Currency  string             `json:"currency"`
-	Source    string             `json:"source"`
-	FetchedAt time.Time          `json:"fetched_at"`
-	Points    []MarketChartPoint `json:"points"`
+	Symbol      string             `json:"symbol"`
+	Name        string             `json:"name,omitempty"`
+	Currency    string             `json:"currency"`
+	Source      string             `json:"source"`
+	FetchedAt   time.Time          `json:"fetched_at"`
+	CacheStatus string             `json:"cache_status,omitempty"`
+	Points      []MarketChartPoint `json:"points"`
 }
 
 type Budget struct {

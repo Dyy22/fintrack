@@ -340,14 +340,19 @@ func (u *Usecases) MarketChart(ctx context.Context, symbol, rng, interval string
 	symbol = normalizeMarketSymbol(symbol)
 	cached, cacheErr := u.repo.LatestMarketChart(ctx, symbol, rng, interval)
 	if cacheErr == nil && time.Since(cached.FetchedAt) < marketChartRefreshInterval {
+		cached.CacheStatus = "cached"
 		return cached, nil
 	}
 	if u.stockProvider == nil {
+		if cacheErr == nil {
+			cached.CacheStatus = "stale"
+		}
 		return cached, cacheErr
 	}
 	fresh, fetchErr := u.stockProvider.Chart(ctx, symbol, rng, interval)
 	if fetchErr != nil {
 		if cacheErr == nil {
+			cached.CacheStatus = "stale"
 			return cached, nil
 		}
 		return domain.MarketChart{}, fetchErr
@@ -360,6 +365,7 @@ func (u *Usecases) MarketChart(ctx context.Context, symbol, rng, interval string
 	if err != nil {
 		return domain.MarketChart{}, err
 	}
+	stored.CacheStatus = "live"
 	return stored, nil
 }
 
@@ -367,14 +373,19 @@ func (u *Usecases) StockQuote(ctx context.Context, symbol string) (domain.StockQ
 	symbol = normalizeIDXSymbol(symbol)
 	cached, cacheErr := u.repo.LatestStockQuote(ctx, symbol)
 	if cacheErr == nil && time.Since(cached.FetchedAt) < stockQuoteRefreshInterval {
+		cached.CacheStatus = "cached"
 		return cached, nil
 	}
 	if u.stockProvider == nil {
+		if cacheErr == nil {
+			cached.CacheStatus = "stale"
+		}
 		return cached, cacheErr
 	}
 	fresh, fetchErr := u.stockProvider.Quote(ctx, symbol)
 	if fetchErr != nil {
 		if cacheErr == nil {
+			cached.CacheStatus = "stale"
 			return cached, nil
 		}
 		return domain.StockQuote{}, fetchErr
@@ -384,6 +395,7 @@ func (u *Usecases) StockQuote(ctx context.Context, symbol string) (domain.StockQ
 	if err != nil {
 		return domain.StockQuote{}, err
 	}
+	stored.CacheStatus = "live"
 	return stored, nil
 }
 
