@@ -17,6 +17,45 @@ import {
 import { formatIDR } from "../utils/format";
 import { usePageTitle } from "../utils/usePageTitle";
 
+const COMMON_IDX_SYMBOLS = [
+  "AALI",
+  "ACES",
+  "ADRO",
+  "AKRA",
+  "ANTM",
+  "ARTO",
+  "ASII",
+  "BBCA",
+  "BBNI",
+  "BBRI",
+  "BBTN",
+  "BMRI",
+  "BRIS",
+  "BRPT",
+  "BUKA",
+  "CPIN",
+  "EMTK",
+  "ERAA",
+  "EXCL",
+  "GOTO",
+  "ICBP",
+  "INCO",
+  "INDF",
+  "INKP",
+  "INTP",
+  "ITMG",
+  "KLBF",
+  "MDKA",
+  "MEDC",
+  "PGAS",
+  "PTBA",
+  "SMGR",
+  "TLKM",
+  "TOWR",
+  "UNTR",
+  "UNVR",
+];
+
 export function NewAccountPage() {
   usePageTitle("Add Account");
   const navigate = useNavigate();
@@ -27,6 +66,7 @@ export function NewAccountPage() {
   const [accountTypeID, setAccountTypeID] = useState("");
   const [balance, setBalance] = useState("");
   const [goldGrams, setGoldGrams] = useState("");
+  const [stockLots, setStockLots] = useState("");
   const [goldInputMode, setGoldInputMode] = useState<"idr" | "grams" | null>(
     null,
   );
@@ -42,6 +82,7 @@ export function NewAccountPage() {
     (type) => String(type.id) === accountTypeID,
   );
   const isGoldAccount = selectedAccountType?.name === "gold";
+  const isStockAccount = selectedAccountType?.name === "stock_broker";
 
   const accountTypeOptions = [
     { value: "", label: "Select account type" },
@@ -75,6 +116,14 @@ export function NewAccountPage() {
         errors.balance = "must be greater than 0";
       }
     }
+    if (isStockAccount) {
+      if (!/^[A-Z]{4}$/.test(name.trim().toUpperCase())) {
+        errors.name = "must be a 4-letter IDX ticker, e.g. BBCA";
+      }
+      if (!stockLots || Number(stockLots) <= 0) {
+        errors.stock_lots = "must be greater than 0";
+      }
+    }
 
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
@@ -85,8 +134,10 @@ export function NewAccountPage() {
       await createAccount(
         name,
         Number(accountTypeID),
-        Number(balance) || 0,
+        isStockAccount ? 0 : Number(balance) || 0,
         isGoldAccount ? Number(goldGrams) || 0 : undefined,
+        isStockAccount ? name.trim().toUpperCase() : undefined,
+        isStockAccount ? Number(stockLots) || 0 : undefined,
       );
       navigate("/accounts", { replace: true });
     } catch (error) {
@@ -115,9 +166,23 @@ export function NewAccountPage() {
             <NeoInput
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="BCA Savings"
+              onChange={(e) =>
+                setName(
+                  isStockAccount
+                    ? e.target.value.toUpperCase()
+                    : e.target.value,
+                )
+              }
+              placeholder={isStockAccount ? "BBCA" : "BCA Savings"}
+              list={isStockAccount ? "idx-symbols" : undefined}
             />
+            {isStockAccount ? (
+              <datalist id="idx-symbols">
+                {COMMON_IDX_SYMBOLS.map((symbol) => (
+                  <option key={symbol} value={symbol} />
+                ))}
+              </datalist>
+            ) : null}
             {fieldErrors.name && (
               <span className="mt-1 block text-sm text-red-600">
                 {fieldErrors.name}
@@ -136,6 +201,7 @@ export function NewAccountPage() {
                 setAccountTypeID(value);
                 setBalance("");
                 setGoldGrams("");
+                setStockLots("");
                 setGoldInputMode(null);
               }}
               placeholder="Select account type"
@@ -214,6 +280,31 @@ export function NewAccountPage() {
               <p className="text-xs font-semibold text-slate-500 sm:col-span-2">
                 Current Antam price: {formatIDR(goldPrice?.price_per_gram)} /
                 gr. Fill one field and Fintrack will calculate the other.
+              </p>
+            </div>
+          ) : isStockAccount ? (
+            <div className="space-y-3 rounded-2xl border-2 border-slate-950 bg-blue-50 p-4 shadow-[3px_3px_0_0_#101828] dark:border-slate-100 dark:bg-slate-900 dark:shadow-[3px_3px_0_0_#f8fafc]">
+              <label className="block">
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                  Lot Saham
+                </span>
+                <NeoInput
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={stockLots}
+                  onChange={(e) => setStockLots(e.target.value)}
+                  placeholder="10"
+                />
+                {fieldErrors.stock_lots && (
+                  <span className="mt-1 block text-sm text-red-600">
+                    {fieldErrors.stock_lots}
+                  </span>
+                )}
+              </label>
+              <p className="text-xs font-semibold text-slate-500">
+                1 lot = 100 lembar. Fintrack akan validasi emiten BEI dan
+                menghitung nilai rupiah otomatis dari harga pasar terbaru.
               </p>
             </div>
           ) : (

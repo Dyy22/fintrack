@@ -15,7 +15,7 @@ type fakeUsecase struct {
 	loginFn              func(ctx context.Context, email, password string) (usecase.LoginResult, error)
 	listAccountTypesFn   func(ctx context.Context) ([]domain.AccountType, error)
 	listAccountsFn       func(ctx context.Context, userID uuid.UUID) ([]domain.Account, error)
-	createAccountFn      func(ctx context.Context, userID uuid.UUID, name string, accountTypeID int, balance float64, goldGrams *float64) (domain.Account, error)
+	createAccountFn      func(ctx context.Context, userID uuid.UUID, name string, accountTypeID int, balance float64, goldGrams *float64, stockSymbol *string, stockLots *float64) (domain.Account, error)
 	updateAccountFn      func(ctx context.Context, userID, accountID uuid.UUID, name *string, isActive *bool) (domain.Account, error)
 	softDeleteAccountFn  func(ctx context.Context, userID, accountID uuid.UUID) error
 	hardDeleteAccountFn  func(ctx context.Context, userID, accountID uuid.UUID) error
@@ -29,6 +29,7 @@ type fakeUsecase struct {
 	spendingByCategoryFn func(ctx context.Context, userID uuid.UUID, startDate, endDate string) (time.Time, time.Time, float64, []domain.SpendingCategory, float64, error)
 	latestGoldPriceFn    func(ctx context.Context) (domain.GoldPrice, error)
 	goldPriceHistoryFn   func(ctx context.Context, days int) ([]domain.GoldPriceHistoryPoint, error)
+	marketChartFn        func(ctx context.Context, symbol, rng, interval string) (domain.MarketChart, error)
 	createBudgetFn       func(ctx context.Context, userID uuid.UUID, categoryID uuid.UUID, month, year int, amount float64) (domain.BudgetWithSpending, error)
 	listBudgetsFn        func(ctx context.Context, userID uuid.UUID, month, year int) ([]domain.BudgetWithSpending, error)
 	updateBudgetFn       func(ctx context.Context, userID, budgetID uuid.UUID, amount float64) (domain.BudgetWithSpending, error)
@@ -47,8 +48,8 @@ func (f fakeUsecase) ListAccountTypes(ctx context.Context) ([]domain.AccountType
 func (f fakeUsecase) ListAccounts(ctx context.Context, userID uuid.UUID) ([]domain.Account, error) {
 	return f.listAccountsFn(ctx, userID)
 }
-func (f fakeUsecase) CreateAccount(ctx context.Context, userID uuid.UUID, name string, accountTypeID int, balance float64, goldGrams *float64) (domain.Account, error) {
-	return f.createAccountFn(ctx, userID, name, accountTypeID, balance, goldGrams)
+func (f fakeUsecase) CreateAccount(ctx context.Context, userID uuid.UUID, name string, accountTypeID int, balance float64, goldGrams *float64, stockSymbol *string, stockLots *float64) (domain.Account, error) {
+	return f.createAccountFn(ctx, userID, name, accountTypeID, balance, goldGrams, stockSymbol, stockLots)
 }
 func (f fakeUsecase) UpdateAccount(ctx context.Context, userID, accountID uuid.UUID, name *string, isActive *bool) (domain.Account, error) {
 	return f.updateAccountFn(ctx, userID, accountID, name, isActive)
@@ -94,6 +95,12 @@ func (f fakeUsecase) GoldPriceHistory(ctx context.Context, days int) ([]domain.G
 		return f.goldPriceHistoryFn(ctx, days)
 	}
 	return nil, nil
+}
+func (f fakeUsecase) MarketChart(ctx context.Context, symbol, rng, interval string) (domain.MarketChart, error) {
+	if f.marketChartFn != nil {
+		return f.marketChartFn(ctx, symbol, rng, interval)
+	}
+	return domain.MarketChart{}, nil
 }
 func (f fakeUsecase) CreateBudget(ctx context.Context, userID uuid.UUID, categoryID uuid.UUID, month, year int, amount float64) (domain.BudgetWithSpending, error) {
 	if f.createBudgetFn != nil {

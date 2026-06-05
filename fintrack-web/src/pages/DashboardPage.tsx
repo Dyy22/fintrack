@@ -5,18 +5,21 @@ import { Card } from "../components/common/Card";
 import { NeoEmptyState } from "../components/common/NeoEmptyState";
 import { NeoPageHeader } from "../components/common/NeoPageHeader";
 import { NeoStatCard } from "../components/common/NeoStatCard";
+import { SkeletonCard } from "../components/common/Skeleton";
 import { useAccountStore } from "../stores/accountStore";
 import { useReportStore } from "../stores/reportStore";
 import { useTransactionStore } from "../stores/transactionStore";
-import { SkeletonCard } from "../components/common/Skeleton";
-import { usePageTitle } from "../utils/usePageTitle";
-import type { GoldPriceHistoryPoint } from "../types";
+import {
+  accountDisplayBalance,
+  accountTypeLabel,
+} from "../utils/accountDisplay";
 import {
   formatDate,
   formatGoldGrams,
   formatIDR,
   transactionAmountLabel,
 } from "../utils/format";
+import { usePageTitle } from "../utils/usePageTitle";
 
 export function DashboardPage() {
   usePageTitle("Dashboard");
@@ -29,14 +32,10 @@ export function DashboardPage() {
     netWorth,
     totalSpending,
     totalIncome,
-    goldPrice,
-    goldPriceHistory,
     isLoadingWorth,
     isLoadingSpending,
     fetchNetWorth,
     fetchSpending,
-    fetchGoldPrice,
-    fetchGoldPriceHistory,
     spendingStartDate,
     spendingEndDate,
   } = useReportStore();
@@ -54,15 +53,11 @@ export function DashboardPage() {
     fetchNetWorth();
     fetchRecent();
     fetchSpending(spendingStartDate, spendingEndDate);
-    fetchGoldPrice().catch(() => undefined);
-    fetchGoldPriceHistory(7).catch(() => undefined);
   }, [
     fetchAccounts,
     fetchNetWorth,
     fetchRecent,
     fetchSpending,
-    fetchGoldPrice,
-    fetchGoldPriceHistory,
     spendingStartDate,
     spendingEndDate,
   ]);
@@ -76,6 +71,9 @@ export function DashboardPage() {
         icon="📈"
         actions={
           <>
+            <Link to="/markets">
+              <Button variant="secondary">Markets</Button>
+            </Link>
             <Link to="/accounts">
               <Button variant="secondary">Manage Accounts</Button>
             </Link>
@@ -109,28 +107,6 @@ export function DashboardPage() {
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             <Card>
               <p className="font-semibold text-slate-950 dark:text-slate-100">
-                Antam Gold Price
-              </p>
-              {goldPrice ? (
-                <>
-                  <p className="mt-2 text-2xl font-black text-yellow-700 dark:text-yellow-200">
-                    {formatIDR(goldPrice.price_per_gram)} / gr
-                  </p>
-                  <p className="mt-1 text-xs font-semibold text-slate-500">
-                    Updated {formatDate(goldPrice.fetched_at)} •{" "}
-                    {goldPrice.source}
-                  </p>
-                  <GoldPriceChart history={goldPriceHistory} />
-                </>
-              ) : (
-                <p className="mt-4 text-sm text-slate-500">
-                  Gold price source is not configured yet.
-                </p>
-              )}
-            </Card>
-
-            <Card>
-              <p className="font-semibold text-slate-950 dark:text-slate-100">
                 Account Balances
               </p>
               {accounts?.length === 0 ? (
@@ -154,14 +130,17 @@ export function DashboardPage() {
                           {account.name}
                         </p>
                         <p className="text-xs text-slate-500">
-                          {account.type}
+                          {accountTypeLabel(account.type)}
                           {account.type === "gold" && account.gold_grams != null
                             ? ` • ${formatGoldGrams(account.gold_grams)}`
-                            : ""}
+                            : account.type === "stock_broker" &&
+                                account.stock_lots != null
+                              ? ` • ${account.stock_lots} lot @ ${formatIDR(account.stock_price_per_share)}`
+                              : ""}
                         </p>
                       </div>
                       <p className="shrink-0 text-right text-sm font-semibold text-slate-950 dark:text-slate-100">
-                        {formatIDR(account.balance)}
+                        {formatIDR(accountDisplayBalance(account))}
                       </p>
                     </li>
                   ))}
@@ -271,112 +250,6 @@ export function DashboardPage() {
             }
           />
         </Card>
-      ) : null}
-    </div>
-  );
-}
-
-function GoldPriceChart({ history }: { history: GoldPriceHistoryPoint[] }) {
-  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
-  const points = history.slice(-7);
-
-  if (points.length === 0) {
-    return (
-      <div className="mt-4 rounded-2xl border-2 border-dashed border-slate-300 p-3 text-xs font-semibold text-slate-500 dark:border-slate-700">
-        Gold price history will appear after the next refresh.
-      </div>
-    );
-  }
-
-  const width = 240;
-  const height = 84;
-  const paddingX = 12;
-  const paddingY = 12;
-  const prices = points.map((point) => point.price_per_gram);
-  const minPrice = Math.min(...prices);
-  const maxPrice = Math.max(...prices);
-  const priceRange = maxPrice - minPrice;
-  const chartWidth = width - paddingX * 2;
-  const chartHeight = height - paddingY * 2;
-  const coordinates = points.map((point, index) => {
-    const x =
-      points.length === 1
-        ? width / 2
-        : paddingX + (index / (points.length - 1)) * chartWidth;
-    const y =
-      priceRange === 0
-        ? height / 2
-        : paddingY +
-          ((maxPrice - point.price_per_gram) / priceRange) * chartHeight;
-    return { ...point, x, y };
-  });
-  const path = coordinates.map((point) => `${point.x},${point.y}`).join(" ");
-  const hoveredPoint = hoveredIndex === null ? null : coordinates[hoveredIndex];
-  const latest = points[points.length - 1];
-  const first = points[0];
-  const priceDelta = latest.price_per_gram - first.price_per_gram;
-
-  return (
-    <div className="mt-4 rounded-2xl border-2 border-slate-950 bg-yellow-50 p-3 shadow-[3px_3px_0_0_#101828] dark:border-slate-100 dark:bg-slate-900 dark:shadow-[3px_3px_0_0_#f8fafc]">
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <p className="text-xs font-black uppercase text-slate-600 dark:text-slate-300">
-          7D Trend
-        </p>
-        <p
-          className={`text-xs font-black ${priceDelta >= 0 ? "text-green-700 dark:text-green-300" : "text-red-700 dark:text-red-300"}`}
-        >
-          {priceDelta >= 0 ? "+" : ""}
-          {formatIDR(priceDelta)}
-        </p>
-      </div>
-      <div className="relative">
-        <svg
-          className="h-24 w-full overflow-visible"
-          viewBox={`0 0 ${width} ${height}`}
-          role="img"
-          aria-label={`Gold price chart for the last ${points.length} days`}
-          preserveAspectRatio="none"
-        >
-          <polyline
-            points={path}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="4"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="text-yellow-500"
-          />
-          {coordinates.map((point, index) => (
-            <circle
-              key={point.date}
-              cx={point.x}
-              cy={point.y}
-              r={hoveredIndex === index ? 5 : 4}
-              className="cursor-pointer fill-[#fffdf7] stroke-slate-950 outline-none dark:fill-slate-800 dark:stroke-slate-100"
-              strokeWidth="3"
-              tabIndex={0}
-              aria-label={`${point.date}: ${formatIDR(point.price_per_gram)} per gram`}
-              onFocus={() => setHoveredIndex(index)}
-              onBlur={() => setHoveredIndex(null)}
-              onMouseEnter={() => setHoveredIndex(index)}
-            />
-          ))}
-        </svg>
-        {hoveredPoint ? (
-          <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-xl border-2 border-slate-950 bg-[#fffdf7] px-2 py-1 text-center shadow-[2px_2px_0_0_#101828] dark:border-slate-100 dark:bg-slate-800 dark:shadow-[2px_2px_0_0_#f8fafc]">
-            <p className="text-[0.6rem] font-black uppercase text-slate-500">
-              {hoveredPoint.date}
-            </p>
-            <p className="text-xs font-black text-slate-950 dark:text-slate-100">
-              {formatIDR(hoveredPoint.price_per_gram)}
-            </p>
-          </div>
-        ) : null}
-      </div>
-      {points.length < 2 ? (
-        <p className="mt-1 text-xs font-semibold text-slate-500">
-          Need more daily snapshots to draw a full weekly trend.
-        </p>
       ) : null}
     </div>
   );

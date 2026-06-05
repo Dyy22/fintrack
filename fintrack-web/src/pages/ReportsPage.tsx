@@ -11,6 +11,7 @@ import {
   clampFutureDateInput,
   getTodayDateInputValue,
 } from "../utils/dateInput";
+import { accountDisplayBalance } from "../utils/accountDisplay";
 import { formatIDR } from "../utils/format";
 
 import { usePageTitle } from "../utils/usePageTitle";
@@ -86,7 +87,7 @@ export function ReportsPage() {
                         {account.name}
                       </span>
                       <span className="shrink-0 font-black text-slate-950 dark:text-slate-100">
-                        {formatIDR(account.balance)}
+                        {formatIDR(accountDisplayBalance(account))}
                       </span>
                     </div>
                   ))}

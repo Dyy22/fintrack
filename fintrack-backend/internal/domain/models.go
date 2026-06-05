@@ -21,18 +21,21 @@ type AccountType struct {
 }
 
 type Account struct {
-	ID            uuid.UUID `json:"id"`
-	UserID        uuid.UUID `json:"-"`
-	AccountTypeID int       `json:"account_type_id,omitempty"`
-	Type          string    `json:"type"`
-	Name          string    `json:"name"`
-	Balance       float64   `json:"balance"`
-	Currency      string    `json:"currency"`
-	GoldGrams     *float64  `json:"gold_grams,omitempty"`
-	GoldPrice     *float64  `json:"gold_price_per_gram,omitempty"`
-	IsActive      bool      `json:"is_active"`
-	CreatedAt     time.Time `json:"created_at,omitempty"`
-	UpdatedAt     time.Time `json:"updated_at,omitempty"`
+	ID                 uuid.UUID `json:"id"`
+	UserID             uuid.UUID `json:"-"`
+	AccountTypeID      int       `json:"account_type_id,omitempty"`
+	Type               string    `json:"type"`
+	Name               string    `json:"name"`
+	Balance            float64   `json:"balance"`
+	Currency           string    `json:"currency"`
+	GoldGrams          *float64  `json:"gold_grams,omitempty"`
+	GoldPrice          *float64  `json:"gold_price_per_gram,omitempty"`
+	StockSymbol        *string   `json:"stock_symbol,omitempty"`
+	StockLots          *float64  `json:"stock_lots,omitempty"`
+	StockPricePerShare *float64  `json:"stock_price_per_share,omitempty"`
+	IsActive           bool      `json:"is_active"`
+	CreatedAt          time.Time `json:"created_at,omitempty"`
+	UpdatedAt          time.Time `json:"updated_at,omitempty"`
 }
 
 type Category struct {
@@ -80,6 +83,29 @@ type GoldPriceHistoryPoint struct {
 	Date         string  `json:"date"`
 	PricePerGram float64 `json:"price_per_gram"`
 	Source       string  `json:"source"`
+}
+
+type StockQuote struct {
+	Symbol    string    `json:"symbol"`
+	Name      string    `json:"name,omitempty"`
+	Price     float64   `json:"price"`
+	Currency  string    `json:"currency"`
+	Source    string    `json:"source"`
+	FetchedAt time.Time `json:"fetched_at"`
+}
+
+type MarketChartPoint struct {
+	Time  time.Time `json:"time"`
+	Close float64   `json:"close"`
+}
+
+type MarketChart struct {
+	Symbol    string             `json:"symbol"`
+	Name      string             `json:"name,omitempty"`
+	Currency  string             `json:"currency"`
+	Source    string             `json:"source"`
+	FetchedAt time.Time          `json:"fetched_at"`
+	Points    []MarketChartPoint `json:"points"`
 }
 
 type Budget struct {

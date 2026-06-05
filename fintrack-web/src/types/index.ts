@@ -20,6 +20,9 @@ export type Account = {
   currency: string;
   gold_grams?: number;
   gold_price_per_gram?: number;
+  stock_symbol?: string;
+  stock_lots?: number;
+  stock_price_per_share?: number;
   is_active: boolean;
   created_at?: string;
   updated_at?: string;
@@ -69,6 +72,20 @@ export type GoldPriceHistoryPoint = {
   date: string;
   price_per_gram: number;
   source: string;
+};
+
+export type MarketChartPoint = {
+  time: string;
+  close: number;
+};
+
+export type MarketChart = {
+  symbol: string;
+  name?: string;
+  currency: string;
+  source: string;
+  fetched_at: string;
+  points: MarketChartPoint[];
 };
 
 export type ValidationErrorResponse = {

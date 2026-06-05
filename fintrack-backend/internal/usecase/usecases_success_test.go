@@ -134,7 +134,7 @@ func TestListAccountTypesDelegatesToRepository(t *testing.T) {
 func TestCreateAccountTrimsNameAndDelegates(t *testing.T) {
 	userID := uuid.New()
 	repo := fakeRepository{
-		createAccountFn: func(_ context.Context, gotUserID uuid.UUID, name string, accountTypeID int, balance float64, goldGrams *float64, goldPrice *float64) (domain.Account, error) {
+		createAccountFn: func(_ context.Context, gotUserID uuid.UUID, name string, accountTypeID int, balance float64, goldGrams *float64, goldPrice *float64, stockSymbol *string, stockLots *float64, stockPrice *float64) (domain.Account, error) {
 			if gotUserID != userID || name != "BCA Savings" || accountTypeID != 1 || balance != 5000000 {
 				t.Fatalf("unexpected args: userID=%s name=%q accountTypeID=%d balance=%f", gotUserID, name, accountTypeID, balance)
 			}
@@ -143,7 +143,7 @@ func TestCreateAccountTrimsNameAndDelegates(t *testing.T) {
 	}
 	uc := New(repo, security.NewJWTService("secret", time.Hour))
 
-	account, err := uc.CreateAccount(context.Background(), userID, "  BCA Savings  ", 1, 5000000, nil)
+	account, err := uc.CreateAccount(context.Background(), userID, "  BCA Savings  ", 1, 5000000, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("CreateAccount returned error: %v", err)
 	}
