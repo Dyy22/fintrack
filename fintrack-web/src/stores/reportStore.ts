@@ -4,6 +4,7 @@ import type {
   Account,
   GoldPrice,
   GoldPriceHistoryPoint,
+  MarketChart,
   SpendingCategory,
 } from "../types";
 
@@ -46,12 +47,15 @@ type ReportState = {
   isLoadingSpending: boolean;
   isLoadingGoldPrice: boolean;
   isLoadingGoldPriceHistory: boolean;
+  isLoadingMarketChart: boolean;
+  marketCharts: Record<string, MarketChart>;
   spendingStartDate: string;
   spendingEndDate: string;
   fetchNetWorth: () => Promise<void>;
   fetchSpending: (startDate: string, endDate: string) => Promise<void>;
   fetchGoldPrice: () => Promise<void>;
   fetchGoldPriceHistory: (days?: number) => Promise<void>;
+  fetchMarketChart: (symbol: string, range?: string) => Promise<void>;
 };
 
 export const useReportStore = create<ReportState>((set) => ({
@@ -66,6 +70,8 @@ export const useReportStore = create<ReportState>((set) => ({
   isLoadingSpending: false,
   isLoadingGoldPrice: false,
   isLoadingGoldPriceHistory: false,
+  isLoadingMarketChart: false,
+  marketCharts: {},
   spendingStartDate: firstDayOfMonthString(),
   spendingEndDate: todayString(),
 
@@ -99,6 +105,20 @@ export const useReportStore = create<ReportState>((set) => ({
       set({ goldPriceHistory: data.history ?? [] });
     } finally {
       set({ isLoadingGoldPriceHistory: false });
+    }
+  },
+
+  async fetchMarketChart(symbol: string, range = "1mo") {
+    set({ isLoadingMarketChart: true });
+    try {
+      const { data } = await api.get<MarketChart>("/market/chart", {
+        params: { symbol, range, interval: "1d" },
+      });
+      set((state) => ({
+        marketCharts: { ...state.marketCharts, [data.symbol]: data },
+      }));
+    } finally {
+      set({ isLoadingMarketChart: false });
     }
   },
 

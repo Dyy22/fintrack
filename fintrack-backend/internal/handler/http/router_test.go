@@ -206,7 +206,7 @@ func TestCreateAccountValidationAndSuccess(t *testing.T) {
 	jwtService := security.NewJWTService("secret", time.Hour)
 	userID := uuid.New()
 	r := testRouter(fakeUsecase{
-		createAccountFn: func(_ context.Context, gotUserID uuid.UUID, name string, accountTypeID int, balance float64, goldGrams *float64) (domain.Account, error) {
+		createAccountFn: func(_ context.Context, gotUserID uuid.UUID, name string, accountTypeID int, balance float64, goldGrams *float64, stockSymbol *string, stockLots *float64) (domain.Account, error) {
 			if gotUserID != userID || name != "BCA" || accountTypeID != 1 || balance != 1000000 {
 				t.Fatalf("unexpected create account args: userID=%s name=%q type=%d balance=%f", gotUserID, name, accountTypeID, balance)
 			}

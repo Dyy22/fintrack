@@ -5,6 +5,7 @@ import { useTheme } from "../../stores/themeStore";
 const navItems = [
   { to: "/dashboard", label: "Dashboard" },
   { to: "/accounts", label: "Accounts" },
+  { to: "/markets", label: "Markets" },
   { to: "/transactions", label: "Transactions" },
   { to: "/budgets", label: "Budgets" },
   { to: "/reports", label: "Reports" },

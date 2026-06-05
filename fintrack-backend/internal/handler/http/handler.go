@@ -20,7 +20,7 @@ type Usecase interface {
 	Login(ctx context.Context, email, password string) (usecase.LoginResult, error)
 	ListAccountTypes(ctx context.Context) ([]domain.AccountType, error)
 	ListAccounts(ctx context.Context, userID uuid.UUID) ([]domain.Account, error)
-	CreateAccount(ctx context.Context, userID uuid.UUID, name string, accountTypeID int, balance float64, goldGrams *float64) (domain.Account, error)
+	CreateAccount(ctx context.Context, userID uuid.UUID, name string, accountTypeID int, balance float64, goldGrams *float64, stockSymbol *string, stockLots *float64) (domain.Account, error)
 	UpdateAccount(ctx context.Context, userID, accountID uuid.UUID, name *string, isActive *bool) (domain.Account, error)
 	SoftDeleteAccount(ctx context.Context, userID, accountID uuid.UUID) error
 	HardDeleteAccount(ctx context.Context, userID, accountID uuid.UUID) error
@@ -34,6 +34,7 @@ type Usecase interface {
 	SpendingByCategory(ctx context.Context, userID uuid.UUID, startDate, endDate string) (time.Time, time.Time, float64, []domain.SpendingCategory, float64, error)
 	LatestGoldPrice(ctx context.Context) (domain.GoldPrice, error)
 	GoldPriceHistory(ctx context.Context, days int) ([]domain.GoldPriceHistoryPoint, error)
+	MarketChart(ctx context.Context, symbol, rng, interval string) (domain.MarketChart, error)
 	CreateBudget(ctx context.Context, userID uuid.UUID, categoryID uuid.UUID, month, year int, amount float64) (domain.BudgetWithSpending, error)
 	ListBudgets(ctx context.Context, userID uuid.UUID, month, year int) ([]domain.BudgetWithSpending, error)
 	UpdateBudget(ctx context.Context, userID, budgetID uuid.UUID, amount float64) (domain.BudgetWithSpending, error)
@@ -106,7 +107,7 @@ func (h *Handler) CreateAccount(c *gin.Context) {
 		response.ValidationError(c, err)
 		return
 	}
-	account, err := h.uc.CreateAccount(c.Request.Context(), userID, req.Name, req.AccountTypeID, req.Balance, req.GoldGrams)
+	account, err := h.uc.CreateAccount(c.Request.Context(), userID, req.Name, req.AccountTypeID, req.Balance, req.GoldGrams, req.StockSymbol, req.StockLots)
 	if err != nil {
 		response.Error(c, err)
 		return
@@ -337,6 +338,15 @@ func (h *Handler) GoldPriceHistory(c *gin.Context) {
 		return
 	}
 	c.JSON(stdhttp.StatusOK, gin.H{"history": history})
+}
+
+func (h *Handler) MarketChart(c *gin.Context) {
+	chart, err := h.uc.MarketChart(c.Request.Context(), c.DefaultQuery("symbol", "IHSG"), c.DefaultQuery("range", "1mo"), c.DefaultQuery("interval", "1d"))
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+	c.JSON(stdhttp.StatusOK, chart)
 }
 
 func (h *Handler) ListBudgets(c *gin.Context) {
