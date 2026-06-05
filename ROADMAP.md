@@ -1,9 +1,10 @@
 # Fintrack — Project Roadmap
 
-**Version**: v1.0.0  
-**Last Updated**: 4 June 2026
+**Version**: v1.1.0-roadmap  
+**Last Updated**: 5 June 2026
 
-> Tagged release: [`v1.0.0`](https://github.com/Dyy22/fintract/releases/tag/v1.0.0)
+> Latest tagged release: [`v1.0.0`](https://github.com/Dyy22/fintrack/releases/tag/v1.0.0)  
+> Current feature PR: [#4 Add IDX markets and persistent cache](https://github.com/Dyy22/fintrack/pull/4)
 
 ---
 
@@ -28,6 +29,8 @@
 | CI | ✅ | GitHub Actions validates backend, frontend, and Docker builds |
 | Deploy workflow | ✅ | Runs after CI success on `main`; triggers Render backend deploy |
 | Production docs | ✅ | Root/backend/frontend READMEs updated with deployment and license info |
+| IDX stock market data | 🚧 | Implemented in PR #4; pending merge/deploy/migration |
+| Persistent market cache | 🚧 | Implemented in PR #4 using DB-backed quote/chart cache; pending production migration |
 
 Production flow:
 
@@ -74,7 +77,8 @@ push to main -> CI -> Render backend deploy hook; Vercel deploys frontend from G
 | `GET /api/v1/reports/net-worth` | ✅ | |
 | `GET /api/v1/reports/spending-by-category` | ✅ | |
 | `GET /api/v1/gold/price` | ✅ | Current cached Antam gold price |
-| `GET /api/v1/gold/prices/history` | ✅ | 7-day gold price history for dashboard chart |
+| `GET /api/v1/gold/prices/history` | ✅ | Gold price history for Markets page chart |
+| `GET /api/v1/market/chart` | 🚧 | Implemented in PR #4; returns IHSG/IDX stock charts with persistent cache fallback |
 
 ### Database
 
@@ -84,8 +88,8 @@ push to main -> CI -> Render backend deploy hook; Vercel deploys frontend from G
 | Seed: account_types | ✅ | bank, ewallet, cash, gold, stock_broker |
 | Seed: default categories | ✅ | Salary, Freelance, Investment, Food, Transport, Shopping, Bills, Entertainment |
 | Constraints: amount > 0, transfer rules, unique categories | ✅ | |
-| Migration files (up/down) | ✅ | 000001-000004 migrations |
-| Neon production database | ✅ | Production schema migrated |
+| Migration files (up/down) | ✅ | 000001-000007 migrations; 000006 stock holdings and 000007 market cache pending merge/deploy |
+| Neon production database | ✅ | Production schema migrated through v1.0.0; market cache migration pending PR #4 deployment |
 | Migration script supports `DATABASE_URL` | ✅ | Can run local or remote Neon migrations |
 
 ### Testing
@@ -163,7 +167,7 @@ push to main -> CI -> Render backend deploy hook; Vercel deploys frontend from G
 | Empty state | ✅ | No accounts |
 | Income vs spending donut chart | ✅ | SVG donut chart showing split |
 | Summary hover/focus percentages | ✅ | Donut center percentage appears on segment hover/focus |
-| Antam gold price trend chart | ✅ | Latest 7 daily gold price snapshots |
+| Antam gold price trend chart | ✅ | Moved to dedicated Markets page in PR #4 |
 
 ### Accounts
 
@@ -176,6 +180,8 @@ push to main -> CI -> Render backend deploy hook; Vercel deploys frontend from G
 | Deactivate account | ✅ | Confirm dialog |
 | Activate account | ✅ | Reactivate deactivated accounts |
 | Delete account | ✅ | Hard delete with confirm dialog |
+| Gold account holdings | ✅ | Gram-based account balance using latest gold price |
+| IDX stock account holdings | 🚧 | Implemented in PR #4; validates IDX tickers, stores lots, calculates value from latest quote |
 
 ### Transactions
 
@@ -198,6 +204,19 @@ push to main -> CI -> Render backend deploy hook; Vercel deploys frontend from G
 | Simple horizontal bars | ✅ | Width = percentage of total |
 | Percentage labels | ✅ | |
 
+### Markets
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Dedicated Markets page | 🚧 | Implemented in PR #4; separate menu/page for gold, IHSG, and portfolio stock charts |
+| IHSG chart | 🚧 | Implemented in PR #4 via Yahoo Finance chart provider |
+| IDX stock charts | 🚧 | Implemented in PR #4 for symbols from stock accounts |
+| Chart timeframe selector | 🚧 | Implemented in PR #4: 5D, 1M, 3M, 6M, 1Y |
+| Market data timestamps | 🚧 | Implemented in PR #4 using `fetched_at` metadata |
+| Persistent quote cache | 🚧 | Implemented in PR #4; DB cache TTL 5 minutes with stale fallback |
+| Persistent chart cache | 🚧 | Implemented in PR #4; DB cache TTL 15 minutes with stale fallback |
+| Yahoo Finance IDX compatibility | 🚧 | Implemented in PR #4; accepts JKT/Jakarta exchange metadata |
+
 ### UI Design — Neobrutalism
 
 | Item | Status | Notes |
@@ -206,7 +225,7 @@ push to main -> CI -> Render backend deploy hook; Vercel deploys frontend from G
 | Global CSS | ✅ | Dot grid background, neobrutal form controls, overrides |
 | Neobrutalism component system | ✅ | NeoButton, NeoCard, NeoInput, NeoTextarea, NeoSelect, NeoDateInput, NeoBadge, NeoAlert, NeoProgress, NeoTable, NeoEmptyState, NeoStatCard, NeoPageHeader |
 | Forms refactor | ✅ | Login, Register, NewAccount, NewTransaction |
-| Data pages refactor | ✅ | Accounts, Transactions, Dashboard, Reports |
+| Data pages refactor | ✅ | Accounts, Transactions, Dashboard, Reports, Markets |
 | Custom NeoDateInput | ✅ | Neobrutal popup, future date disabled |
 | Custom NeoSelect | ✅ | Neobrutal popup, no native select |
 | Dark mode contrast fix | ✅ | Muted text and border overrides |
@@ -234,7 +253,7 @@ push to main -> CI -> Render backend deploy hook; Vercel deploys frontend from G
 | Vercel Git deployment | ✅ | Frontend deploys directly via Vercel Git integration |
 | Render backend deployment | ✅ | Backend deployed with Docker and health check |
 | Neon production DB | ✅ | Configured and migrated |
-| Production CORS | ✅ | Render backend allows Vercel frontend origin |
+| Production CORS | ✅ | Render backend allows production frontend origins, including approved subdomain setup |
 | Secret hygiene check | ✅ | Current tree checked for obvious committed secrets; production secrets rotated by user |
 | MIT License | ✅ | Project is now open source licensed |
 | Deployment docs | ✅ | Root/backend/frontend READMEs updated |
@@ -242,6 +261,7 @@ push to main -> CI -> Render backend deploy hook; Vercel deploys frontend from G
 | Manual migration workflow | ✅ | GitHub Action to run production migrations with a protected secret |
 | DB-aware health check | ✅ | Health check verifies database connectivity, returns `degraded` status on failure |
 | Secret scanning automation | ⬜ | Add GitHub secret scanning/gitleaks workflow |
+| Market cache production migration | 🚧 | PR #4 adds `000007_market_cache`; apply via migration workflow before/with backend deploy |
 
 ---
 
@@ -249,6 +269,9 @@ push to main -> CI -> Render backend deploy hook; Vercel deploys frontend from G
 
 | Item | Status | Notes |
 |------|--------|-------|
+| Market cache status badge | ⬜ | Show Live/Cached/Stale status in Markets UI |
+| Market data error states | ⬜ | Per-card retry/unavailable state when provider and cache both fail |
+| Stock watchlist | ⬜ | Track IDX tickers without requiring stock account ownership |
 | Cryptocurrency portfolio | ⬜ | |
 | Multi-currency support | ⬜ | |
 | Recurring transactions | ⬜ | |
@@ -264,7 +287,10 @@ push to main -> CI -> Render backend deploy hook; Vercel deploys frontend from G
 
 ## Recommended Next Priorities
 
-1. Add secret scanning automation (GitHub secret scanning or gitleaks).
-2. Audit log / account activity history.
-3. User profile and settings page.
-4. Recurring transactions.
+1. Merge PR #4 and run production migrations `000006_stock_holdings` and `000007_market_cache`.
+2. Verify Markets page in production after backend restart: IHSG, stock charts, timestamps, and cache fallback.
+3. Add market cache status badge (`Live` / `Cached` / `Stale`) and clearer per-card error states.
+4. Add secret scanning automation (GitHub secret scanning or gitleaks).
+5. Audit log / account activity history.
+6. User profile and settings page.
+7. Recurring transactions.
