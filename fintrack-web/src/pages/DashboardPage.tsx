@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "../components/common/Button";
 import { Card } from "../components/common/Card";
@@ -70,17 +70,9 @@ export function DashboardPage() {
         eyebrow="Fintrack overview"
         icon="📈"
         actions={
-          <>
-            <Link to="/markets">
-              <Button variant="secondary">Markets</Button>
-            </Link>
-            <Link to="/accounts">
-              <Button variant="secondary">Manage Accounts</Button>
-            </Link>
-            <Link to="/transactions/new">
-              <Button>Add Transaction</Button>
-            </Link>
-          </>
+          <Link to="/transactions/new">
+            <Button>Add Transaction</Button>
+          </Link>
         }
       />
 
@@ -158,30 +150,10 @@ export function DashboardPage() {
                   No data this month.
                 </p>
               ) : (
-                <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center">
-                  <DonutChart
-                    income={totalIncome ?? 0}
-                    expense={totalSpending ?? 0}
-                  />
-                  <div className="min-w-0 space-y-3">
-                    <div>
-                      <p className="text-xs font-bold text-green-600 uppercase">
-                        Income
-                      </p>
-                      <p className="text-lg font-black text-green-700 dark:text-green-300">
-                        {formatIDR(totalIncome)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-red-600 uppercase">
-                        Spending
-                      </p>
-                      <p className="text-lg font-black text-red-700 dark:text-red-300">
-                        {formatIDR(totalSpending)}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                <MonthlySummary
+                  income={totalIncome ?? 0}
+                  spending={totalSpending ?? 0}
+                />
               )}
             </Card>
 
@@ -255,92 +227,78 @@ export function DashboardPage() {
   );
 }
 
-function DonutChart({ income, expense }: { income: number; expense: number }) {
-  const [hoveredSegment, setHoveredSegment] = useState<
-    "income" | "spending" | null
-  >(null);
-  const total = income + expense;
-  const incomeRatio = total > 0 ? income / total : 0;
-  const spendingRatio = total > 0 ? expense / total : 0;
-  const radius = 36;
-  const circumference = 2 * Math.PI * radius;
-  const incomeDash = incomeRatio * circumference;
-  const spendingDash = spendingRatio * circumference;
-  const incomePercentage = Math.round(incomeRatio * 100);
-  const spendingPercentage = Math.round(spendingRatio * 100);
-  const hoveredLabel =
-    hoveredSegment === "income"
-      ? { label: "Income", percentage: incomePercentage }
-      : hoveredSegment === "spending"
-        ? { label: "Spending", percentage: spendingPercentage }
-        : null;
+function MonthlySummary({
+  income,
+  spending,
+}: {
+  income: number;
+  spending: number;
+}) {
+  const net = income - spending;
+  const spendingRatio = income > 0 ? Math.round((spending / income) * 100) : 0;
+  const progress = Math.min(spendingRatio, 100);
+  const isOverBudget = income > 0 && spending > income;
 
   return (
-    <div
-      className="neo-surface relative h-32 w-32 shrink-0 rounded-full bg-yellow-100 p-3 dark:bg-slate-900"
-      onMouseLeave={() => setHoveredSegment(null)}
-    >
-      <svg
-        className="h-full w-full -rotate-90"
-        viewBox="0 0 100 100"
-        role="img"
-        aria-label={`Income ${incomePercentage}%, spending ${spendingPercentage}%`}
-      >
-        <circle
-          cx="50"
-          cy="50"
-          r={radius}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="14"
-          className="text-[#fffdf7] dark:text-slate-800"
-        />
-        <circle
-          cx="50"
-          cy="50"
-          r={radius}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="14"
-          strokeLinecap="butt"
-          strokeDasharray={`${incomeDash} ${circumference - incomeDash}`}
-          className="cursor-pointer text-emerald-300 outline-none transition-opacity hover:opacity-80 focus:opacity-80"
-          tabIndex={0}
-          aria-label={`Income ${incomePercentage}%`}
-          onFocus={() => setHoveredSegment("income")}
-          onBlur={() => setHoveredSegment(null)}
-          onMouseEnter={() => setHoveredSegment("income")}
-        />
-        <circle
-          cx="50"
-          cy="50"
-          r={radius}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="14"
-          strokeLinecap="butt"
-          strokeDasharray={`${spendingDash} ${circumference - spendingDash}`}
-          strokeDashoffset={-incomeDash}
-          className="cursor-pointer text-red-300 outline-none transition-opacity hover:opacity-80 focus:opacity-80"
-          tabIndex={0}
-          aria-label={`Spending ${spendingPercentage}%`}
-          onFocus={() => setHoveredSegment("spending")}
-          onBlur={() => setHoveredSegment(null)}
-          onMouseEnter={() => setHoveredSegment("spending")}
-        />
-      </svg>
-      {hoveredLabel ? (
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <div className="rounded-xl border-2 border-slate-950 bg-[#fffdf7] px-2 py-1 text-center shadow-[2px_2px_0_0_#101828] dark:border-slate-100 dark:bg-slate-800 dark:shadow-[2px_2px_0_0_#f8fafc]">
-            <p className="text-[0.6rem] font-black uppercase text-slate-500">
-              {hoveredLabel.label}
-            </p>
-            <p className="text-sm font-black text-slate-950 dark:text-slate-100">
-              {hoveredLabel.percentage}%
-            </p>
-          </div>
+    <div className="mt-4 space-y-4">
+      <div className="rounded-2xl border-2 border-slate-950 bg-yellow-100 p-4 shadow-[4px_4px_0_0_#101828] dark:border-slate-100 dark:bg-slate-800 dark:shadow-[4px_4px_0_0_#f8fafc]">
+        <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-600 dark:text-slate-200">
+          Net This Month
+        </p>
+        <p
+          className={`mt-2 break-words text-2xl font-black sm:text-3xl ${
+            net < 0
+              ? "text-red-700 dark:text-red-300"
+              : "text-slate-950 dark:text-slate-100"
+          }`}
+        >
+          {formatIDR(net)}
+        </p>
+        <p className="mt-1 text-xs font-semibold text-slate-600 dark:text-slate-300">
+          {net >= 0 ? "Surplus after spending" : "Spending exceeded income"}
+        </p>
+      </div>
+
+      <div>
+        <div className="flex items-center justify-between gap-3 text-xs font-black uppercase tracking-wide text-slate-600 dark:text-slate-300">
+          <span>Spent</span>
+          <span>
+            {income > 0 ? `${spendingRatio}% of income` : "No income"}
+          </span>
         </div>
-      ) : null}
+        <div className="mt-2 h-4 overflow-hidden rounded-full border-2 border-slate-950 bg-[#fffdf7] dark:border-slate-100 dark:bg-slate-800">
+          <div
+            className={`h-full rounded-full ${
+              isOverBudget ? "bg-red-400" : "bg-emerald-300"
+            }`}
+            style={{ width: `${progress}%` }}
+            role="progressbar"
+            aria-label="Spending compared to income"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={progress}
+          />
+        </div>
+      </div>
+
+      <ul className="w-full space-y-3">
+        <li className="flex items-start justify-between gap-3">
+          <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
+            Income
+          </p>
+          <p className="shrink-0 text-right text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+            {formatIDR(income)}
+          </p>
+        </li>
+        <li className="flex items-start justify-between gap-3">
+          <p className="text-sm font-medium text-red-700 dark:text-red-400">
+            Spending
+          </p>
+          <p className="shrink-0 text-right text-sm font-semibold text-red-700 dark:text-red-300">
+            {formatIDR(spending)}
+          </p>
+        </li>
+      </ul>
     </div>
   );
 }
